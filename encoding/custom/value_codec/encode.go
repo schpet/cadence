@@ -86,18 +86,25 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 	switch v := value.(type) {
 	case cadence.Void:
 		return e.EncodeValueIdentifier(EncodedValueVoid)
-	case cadence.Bool:
-		err = e.EncodeValueIdentifier(EncodedValueBool)
-		if err != nil {
-			return
-		}
-		return common_codec.EncodeBool(&e.w, bool(v))
 	case cadence.Optional:
 		err = e.EncodeValueIdentifier(EncodedValueOptional)
 		if err != nil {
 			return
 		}
 		return e.EncodeOptional(v)
+	case cadence.Bool:
+		err = e.EncodeValueIdentifier(EncodedValueBool)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeBool(&e.w, bool(v))
+	case cadence.String:
+		err = e.EncodeValueIdentifier(EncodedValueString)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeString(&e.w, string(v))
+
 	case cadence.Array:
 		err = e.EncodeValueIdentifier(EncodedValueArray)
 		if err != nil {

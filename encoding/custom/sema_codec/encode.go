@@ -20,7 +20,6 @@ package sema_codec
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"math/big"
@@ -300,7 +299,7 @@ func (e *SemaEncoder) EncodeIntPointer(ptr *int) (err error) {
 		return
 	}
 
-	return e.EncodeInt64(int64(*ptr))
+	return common_codec.EncodeInt64(&e.w, int64(*ptr))
 }
 
 func (e *SemaEncoder) EncodeDictionaryType(t *sema.DictionaryType) (err error) {
@@ -327,7 +326,9 @@ func (e *SemaEncoder) EncodeTransactionType(t *sema.TransactionType) (err error)
 		return
 	}
 
-	err = EncodeArray(e, t.Fields, e.EncodeString)
+	err = EncodeArray(e, t.Fields, func(s string) error {
+		return common_codec.EncodeString(&e.w, s)
+	})
 	if err != nil {
 		return
 	}
@@ -367,7 +368,7 @@ func (e *SemaEncoder) EncodeConstantSizedType(t *sema.ConstantSizedType) (err er
 		return
 	}
 
-	return e.EncodeInt64(t.Size)
+	return common_codec.EncodeInt64(&e.w, t.Size)
 }
 
 func (e *SemaEncoder) EncodeGenericType(t *sema.GenericType) (err error) {
@@ -456,7 +457,7 @@ func (e *SemaEncoder) EncodeBigInt(bi *big.Int) (err error) {
 		return
 	}
 
-	return e.EncodeBytes(bi.Bytes())
+	return common_codec.EncodeBytes(&e.w, bi.Bytes())
 }
 
 func (e *SemaEncoder) EncodeTypeIdentifier(id EncodedSema) (err error) {
@@ -474,7 +475,7 @@ func (e *SemaEncoder) EncodePointer(bufferOffset int) (err error) {
 		return
 	}
 
-	return e.EncodeLength(bufferOffset)
+	return common_codec.EncodeLength(&e.w, bufferOffset)
 }
 
 // TODO encode built-in CompositeTypes as enums
@@ -488,7 +489,7 @@ func (e *SemaEncoder) EncodeCompositeType(compositeType *sema.CompositeType) (er
 	}
 
 	// Identifier -> string
-	err = e.EncodeString(compositeType.Identifier)
+	err = common_codec.EncodeString(&e.w, compositeType.Identifier)
 	if err != nil {
 		return
 	}
@@ -520,7 +521,9 @@ func (e *SemaEncoder) EncodeCompositeType(compositeType *sema.CompositeType) (er
 	}
 
 	// Fields -> []string
-	err = EncodeArray(e, compositeType.Fields, e.EncodeString)
+	err = EncodeArray(e, compositeType.Fields, func(s string) error {
+		return common_codec.EncodeString(&e.w, s)
+	})
 	if err != nil {
 		return
 	}
@@ -560,7 +563,7 @@ func (e *SemaEncoder) EncodeCompositeType(compositeType *sema.CompositeType) (er
 }
 
 func (e *SemaEncoder) EncodeTypeParameter(p *sema.TypeParameter) (err error) {
-	err = e.EncodeString(p.Name)
+	err = common_codec.EncodeString(&e.w, p.Name)
 	if err != nil {
 		return
 	}
@@ -574,12 +577,12 @@ func (e *SemaEncoder) EncodeTypeParameter(p *sema.TypeParameter) (err error) {
 }
 
 func (e *SemaEncoder) EncodeParameter(parameter *sema.Parameter) (err error) {
-	err = e.EncodeString(parameter.Label)
+	err = common_codec.EncodeString(&e.w, parameter.Label)
 	if err != nil {
 		return
 	}
 
-	err = e.EncodeString(parameter.Identifier)
+	err = common_codec.EncodeString(&e.w, parameter.Identifier)
 	if err != nil {
 		return
 	}
@@ -609,13 +612,13 @@ func (e *SemaEncoder) EncodeStringMemberOrderedMap(om *sema.StringMemberOrderedM
 			})
 		}
 	})
-	err = e.EncodeLength(len(serializables))
+	err = common_codec.EncodeLength(&e.w, len(serializables))
 	if err != nil {
 		return
 	}
 
 	for _, tuple := range serializables {
-		err = e.EncodeString(tuple.String)
+		err = common_codec.EncodeString(&e.w, tuple.String)
 		if err != nil {
 			return err
 		}
@@ -651,13 +654,13 @@ func (e *SemaEncoder) EncodeStringTypeOrderedMap(om *sema.StringTypeOrderedMap) 
 			})
 		}
 	})
-	err = e.EncodeLength(len(serializables))
+	err = common_codec.EncodeLength(&e.w, len(serializables))
 	if err != nil {
 		return
 	}
 
 	for _, tuple := range serializables {
-		err = e.EncodeString(tuple.String)
+		err = common_codec.EncodeString(&e.w, tuple.String)
 		if err != nil {
 			return err
 		}
@@ -672,7 +675,7 @@ func (e *SemaEncoder) EncodeStringTypeOrderedMap(om *sema.StringTypeOrderedMap) 
 }
 
 func (e *SemaEncoder) EncodeMember(member *sema.Member) (err error) {
-	err = e.EncodeUInt64(uint64(member.Access))
+	err = common_codec.EncodeUInt64(&e.w, uint64(member.Access))
 	if err != nil {
 		return
 	}
@@ -687,17 +690,19 @@ func (e *SemaEncoder) EncodeMember(member *sema.Member) (err error) {
 		return
 	}
 
-	err = e.EncodeUInt64(uint64(member.DeclarationKind))
+	err = common_codec.EncodeUInt64(&e.w, uint64(member.DeclarationKind))
 	if err != nil {
 		return
 	}
 
-	err = e.EncodeUInt64(uint64(member.VariableKind))
+	err = common_codec.EncodeUInt64(&e.w, uint64(member.VariableKind))
 	if err != nil {
 		return
 	}
 
-	err = EncodeArray(e, member.ArgumentLabels, e.EncodeString)
+	err = EncodeArray(e, member.ArgumentLabels, func(s string) error {
+		return common_codec.EncodeString(&e.w, s)
+	})
 	if err != nil {
 		return
 	}
@@ -707,7 +712,7 @@ func (e *SemaEncoder) EncodeMember(member *sema.Member) (err error) {
 		return
 	}
 
-	return e.EncodeString(member.DocString)
+	return common_codec.EncodeString(&e.w, member.DocString)
 }
 
 func (e *SemaEncoder) EncodeTypeAnnotation(anno *sema.TypeAnnotation) (err error) {
@@ -725,7 +730,7 @@ func (e *SemaEncoder) EncodeTypeAnnotation(anno *sema.TypeAnnotation) (err error
 }
 
 func (e *SemaEncoder) EncodeAstIdentifier(id ast.Identifier) (err error) {
-	err = e.EncodeString(id.Identifier)
+	err = common_codec.EncodeString(&e.w, id.Identifier)
 	if err != nil {
 		return
 	}
@@ -734,17 +739,17 @@ func (e *SemaEncoder) EncodeAstIdentifier(id ast.Identifier) (err error) {
 }
 
 func (e *SemaEncoder) EncodeAstPosition(pos ast.Position) (err error) {
-	err = e.EncodeInt64(int64(pos.Offset))
+	err = common_codec.EncodeInt64(&e.w, int64(pos.Offset))
 	if err != nil {
 		return
 	}
 
-	err = e.EncodeInt64(int64(pos.Line))
+	err = common_codec.EncodeInt64(&e.w, int64(pos.Line))
 	if err != nil {
 		return
 	}
 
-	return e.EncodeInt64(int64(pos.Column))
+	return common_codec.EncodeInt64(&e.w, int64(pos.Column))
 }
 
 func (e *SemaEncoder) EncodeInterfaceType(interfaceType *sema.InterfaceType) (err error) {
@@ -753,7 +758,7 @@ func (e *SemaEncoder) EncodeInterfaceType(interfaceType *sema.InterfaceType) (er
 		return
 	}
 
-	err = e.EncodeString(interfaceType.Identifier)
+	err = common_codec.EncodeString(&e.w, interfaceType.Identifier)
 	if err != nil {
 		return
 	}
@@ -768,7 +773,9 @@ func (e *SemaEncoder) EncodeInterfaceType(interfaceType *sema.InterfaceType) (er
 		return
 	}
 
-	err = EncodeArray(e, interfaceType.Fields, e.EncodeString)
+	err = EncodeArray(e, interfaceType.Fields, func(s string) error {
+		return common_codec.EncodeString(&e.w, s)
+	})
 	if err != nil {
 		return
 	}
@@ -785,15 +792,6 @@ func (e *SemaEncoder) EncodeInterfaceType(interfaceType *sema.InterfaceType) (er
 
 	// TODO can I drop nested types if I encode built-in composite types as enums?
 	return e.EncodeStringTypeOrderedMap(interfaceType.GetNestedTypes())
-}
-
-// TODO use a more efficient encoder than `binary` (they say to in their top source comment)
-func (e *SemaEncoder) EncodeUInt64(i uint64) (err error) {
-	return binary.Write(&e.w, binary.BigEndian, i)
-}
-
-func (e *SemaEncoder) EncodeInt64(i int64) (err error) {
-	return binary.Write(&e.w, binary.BigEndian, i)
 }
 
 func (e *SemaEncoder) EncodeLocation(location common.Location) (err error) {
@@ -836,12 +834,12 @@ func (e *SemaEncoder) EncodeAddressLocation(t common.AddressLocation) (err error
 		return
 	}
 
-	err = e.EncodeAddress(t.Address)
+	err = common_codec.EncodeAddress(&e.w, t.Address)
 	if err != nil {
 		return
 	}
 
-	return e.EncodeString(t.Name)
+	return common_codec.EncodeString(&e.w, t.Name)
 }
 
 func (e *SemaEncoder) EncodeIdentifierLocation(t common.IdentifierLocation) (err error) {
@@ -850,7 +848,7 @@ func (e *SemaEncoder) EncodeIdentifierLocation(t common.IdentifierLocation) (err
 		return
 	}
 
-	return e.EncodeString(string(t))
+	return common_codec.EncodeString(&e.w, string(t))
 }
 
 func (e *SemaEncoder) EncodeScriptLocation(t common.ScriptLocation) (err error) {
@@ -868,7 +866,7 @@ func (e *SemaEncoder) EncodeStringLocation(t common.StringLocation) (err error) 
 		return
 	}
 
-	return e.EncodeString(string(t))
+	return common_codec.EncodeString(&e.w, string(t))
 }
 
 func (e *SemaEncoder) EncodeTransactionLocation(t common.TransactionLocation) (err error) {
@@ -884,41 +882,6 @@ func (e *SemaEncoder) EncodeREPLLocation() (err error) {
 	return e.EncodeLocationPrefix(common.REPLLocationPrefix)
 }
 
-// EncodeString encodes a string as a byte array.
-func (e *SemaEncoder) EncodeString(s string) (err error) {
-	return e.EncodeBytes([]byte(s))
-}
-
-// EncodeBytes encodes a byte array.
-func (e *SemaEncoder) EncodeBytes(bytes []byte) (err error) {
-	err = e.EncodeLength(len(bytes))
-	if err != nil {
-		return
-	}
-
-	return e.write(bytes)
-}
-
-// TODO encode length with variable-sized encoding?
-//      e.g. first byte starting with `0` is the last byte in the length
-//      will usually save 3 bytes. the question is if it saves or costs encode and/or decode time
-
-// EncodeLength encodes a non-negative length as a uint32.
-// It uses 4 bytes.
-func (e *SemaEncoder) EncodeLength(length int) (err error) {
-	if length < 0 { // TODO is this safety check useful?
-		return fmt.Errorf("cannot encode length below zero: %d", length)
-	}
-
-	l := uint32(length)
-
-	return binary.Write(&e.w, binary.BigEndian, l)
-}
-
-func (e *SemaEncoder) EncodeAddress(address common.Address) (err error) {
-	return e.write(address[:])
-}
-
 func (e *SemaEncoder) write(b []byte) (err error) {
 	_, err = e.w.Write(b)
 	return
@@ -931,7 +894,7 @@ func EncodeArray[T any](e *SemaEncoder, arr []T, encodeFn func(T) error) (err er
 		return
 	}
 
-	err = e.EncodeLength(len(arr))
+	err = common_codec.EncodeLength(&e.w, len(arr))
 	if err != nil {
 		return
 	}
@@ -951,14 +914,14 @@ func EncodeArray[T any](e *SemaEncoder, arr []T, encodeFn func(T) error) (err er
 func EncodeMap[V sema.Type](e *SemaEncoder, m map[common.TypeID]V, encodeFn func(V) error) (err error) {
 	// ASSUMPTION: map is never `nil`. WHY: EncodeMap only used for Elaboration, which is always fully instantiated.
 
-	err = e.EncodeLength(len(m))
+	err = common_codec.EncodeLength(&e.w, len(m))
 	if err != nil {
 		return
 	}
 
 	// The order of encoded key-value pairs does not matter so long as we don't rely on hashing encoded Elaborations.
 	for k, v := range m { //nolint:maprangecheck
-		err = e.EncodeString(string(k))
+		err = common_codec.EncodeString(&e.w, string(k))
 		if err != nil {
 			return
 		}

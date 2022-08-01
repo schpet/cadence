@@ -20,7 +20,6 @@ package sema_codec
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 
@@ -143,7 +142,7 @@ func (d *SemaDecoder) DecodeType() (t sema.Type, err error) {
 }
 
 func (d *SemaDecoder) EncodePointer() (t sema.Type, err error) {
-	bufferOffset, err := d.DecodeLength()
+	bufferOffset, err := common_codec.DecodeLength(&d.r)
 	if err != nil {
 		return
 	}
@@ -189,7 +188,9 @@ func (d *SemaDecoder) DecodeTransactionType() (tx *sema.TransactionType, err err
 		return
 	}
 
-	tx.Fields, err = DecodeArray(d, d.DecodeString)
+	tx.Fields, err = DecodeArray(d, func() (s string, err error) {
+		return common_codec.DecodeString(&d.r)
+	})
 	if err != nil {
 		return
 	}
@@ -274,7 +275,7 @@ func (d *SemaDecoder) DecodeIntPointer() (ptr *int, err error) {
 		return
 	}
 
-	i64, err := d.DecodeInt64()
+	i64, err := common_codec.DecodeInt64(&d.r)
 	if err != nil {
 		return
 	}
@@ -309,7 +310,7 @@ func (d *SemaDecoder) DecodeConstantSizedType() (a *sema.ConstantSizedType, err 
 		return
 	}
 
-	size, err := d.DecodeInt64()
+	size, err := common_codec.DecodeInt64(&d.r)
 	if err != nil {
 		return
 	}
@@ -492,7 +493,7 @@ func (d *SemaDecoder) DecodeCompositeType() (t *sema.CompositeType, err error) {
 		return
 	}
 
-	t.Identifier, err = d.DecodeString()
+	t.Identifier, err = common_codec.DecodeString(&d.r)
 	if err != nil {
 		return
 	}
@@ -517,7 +518,9 @@ func (d *SemaDecoder) DecodeCompositeType() (t *sema.CompositeType, err error) {
 		return
 	}
 
-	t.Fields, err = DecodeArray(d, d.DecodeString)
+	t.Fields, err = DecodeArray(d, func() (s string, err error) {
+		return common_codec.DecodeString(&d.r)
+	})
 	if err != nil {
 		return
 	}
@@ -568,7 +571,7 @@ func (d *SemaDecoder) DecodeInterfaceType() (t *sema.InterfaceType, err error) {
 		return
 	}
 
-	t.Identifier, err = d.DecodeString()
+	t.Identifier, err = common_codec.DecodeString(&d.r)
 	if err != nil {
 		return
 	}
@@ -583,7 +586,9 @@ func (d *SemaDecoder) DecodeInterfaceType() (t *sema.InterfaceType, err error) {
 		return
 	}
 
-	t.Fields, err = DecodeArray(d, d.DecodeString)
+	t.Fields, err = DecodeArray(d, func() (s string, err error) {
+		return common_codec.DecodeString(&d.r)
+	})
 	if err != nil {
 		return
 	}
@@ -609,7 +614,7 @@ func (d *SemaDecoder) DecodeInterfaceType() (t *sema.InterfaceType, err error) {
 }
 
 func (d *SemaDecoder) DecodeTypeParameter() (p *sema.TypeParameter, err error) {
-	name, err := d.DecodeString()
+	name, err := common_codec.DecodeString(&d.r)
 	if err != nil {
 		return
 	}
@@ -633,12 +638,12 @@ func (d *SemaDecoder) DecodeTypeParameter() (p *sema.TypeParameter, err error) {
 }
 
 func (d *SemaDecoder) DecodeParameter() (parameter *sema.Parameter, err error) {
-	label, err := d.DecodeString()
+	label, err := common_codec.DecodeString(&d.r)
 	if err != nil {
 		return
 	}
 
-	id, err := d.DecodeString()
+	id, err := common_codec.DecodeString(&d.r)
 	if err != nil {
 		return
 	}
@@ -663,7 +668,7 @@ func (d *SemaDecoder) DecodeStringMemberOrderedMap(containerType sema.Type) (om 
 		return
 	}
 
-	length, err := d.DecodeLength()
+	length, err := common_codec.DecodeLength(&d.r)
 	if err != nil {
 		return
 	}
@@ -672,7 +677,7 @@ func (d *SemaDecoder) DecodeStringMemberOrderedMap(containerType sema.Type) (om 
 
 	for i := 0; i < length; i++ {
 		var key string
-		key, err = d.DecodeString()
+		key, err = common_codec.DecodeString(&d.r)
 		if err != nil {
 			return
 		}
@@ -695,7 +700,7 @@ func (d *SemaDecoder) DecodeStringTypeOrderedMap() (om *sema.StringTypeOrderedMa
 		return
 	}
 
-	length, err := d.DecodeLength()
+	length, err := common_codec.DecodeLength(&d.r)
 	if err != nil {
 		return
 	}
@@ -704,7 +709,7 @@ func (d *SemaDecoder) DecodeStringTypeOrderedMap() (om *sema.StringTypeOrderedMa
 
 	for i := 0; i < length; i++ {
 		var key string
-		key, err = d.DecodeString()
+		key, err = common_codec.DecodeString(&d.r)
 		if err != nil {
 			return
 		}
@@ -722,7 +727,7 @@ func (d *SemaDecoder) DecodeStringTypeOrderedMap() (om *sema.StringTypeOrderedMa
 }
 
 func (d *SemaDecoder) DecodeMember(containerType sema.Type) (member *sema.Member, err error) {
-	access, err := d.DecodeUInt64()
+	access, err := common_codec.DecodeUInt64(&d.r)
 	if err != nil {
 		return
 	}
@@ -737,17 +742,19 @@ func (d *SemaDecoder) DecodeMember(containerType sema.Type) (member *sema.Member
 		return
 	}
 
-	declarationKind, err := d.DecodeUInt64()
+	declarationKind, err := common_codec.DecodeUInt64(&d.r)
 	if err != nil {
 		return
 	}
 
-	variableKind, err := d.DecodeUInt64()
+	variableKind, err := common_codec.DecodeUInt64(&d.r)
 	if err != nil {
 		return
 	}
 
-	argumentLabels, err := DecodeArray(d, d.DecodeString)
+	argumentLabels, err := DecodeArray(d, func() (s string, err error) {
+		return common_codec.DecodeString(&d.r)
+	})
 	if err != nil {
 		return
 	}
@@ -757,7 +764,7 @@ func (d *SemaDecoder) DecodeMember(containerType sema.Type) (member *sema.Member
 		return
 	}
 
-	docString, err := d.DecodeString()
+	docString, err := common_codec.DecodeString(&d.r)
 	if err != nil {
 		return
 	}
@@ -778,7 +785,7 @@ func (d *SemaDecoder) DecodeMember(containerType sema.Type) (member *sema.Member
 }
 
 func (d *SemaDecoder) DecodeAstIdentifier() (id ast.Identifier, err error) {
-	identifier, err := d.DecodeString()
+	identifier, err := common_codec.DecodeString(&d.r)
 	if err != nil {
 		return
 	}
@@ -796,17 +803,17 @@ func (d *SemaDecoder) DecodeAstIdentifier() (id ast.Identifier, err error) {
 }
 
 func (d *SemaDecoder) DecodeAstPosition() (pos ast.Position, err error) {
-	offset, err := d.DecodeInt64()
+	offset, err := common_codec.DecodeInt64(&d.r)
 	if err != nil {
 		return
 	}
 
-	line, err := d.DecodeInt64()
+	line, err := common_codec.DecodeInt64(&d.r)
 	if err != nil {
 		return
 	}
 
-	column, err := d.DecodeInt64()
+	column, err := common_codec.DecodeInt64(&d.r)
 	if err != nil {
 		return
 	}
@@ -875,12 +882,12 @@ func (d *SemaDecoder) DecodeLocationPrefix() (prefix string, err error) {
 }
 
 func (d *SemaDecoder) DecodeAddressLocation() (location common.AddressLocation, err error) {
-	address, err := d.DecodeAddress()
+	address, err := common_codec.DecodeAddress(&d.r)
 	if err != nil {
 		return
 	}
 
-	name, err := d.DecodeString()
+	name, err := common_codec.DecodeString(&d.r)
 	if err != nil {
 		return
 	}
@@ -891,7 +898,7 @@ func (d *SemaDecoder) DecodeAddressLocation() (location common.AddressLocation, 
 }
 
 func (d *SemaDecoder) DecodeIdentifierLocation() (location common.IdentifierLocation, err error) {
-	s, err := d.DecodeString()
+	s, err := common_codec.DecodeString(&d.r)
 	location = common.IdentifierLocation(s)
 	return
 }
@@ -910,7 +917,7 @@ func (d *SemaDecoder) DecodeScriptLocation() (location common.ScriptLocation, er
 }
 
 func (d *SemaDecoder) DecodeStringLocation() (location common.StringLocation, err error) {
-	s, err := d.DecodeString()
+	s, err := common_codec.DecodeString(&d.r)
 	location = common.StringLocation(s)
 	return
 }
@@ -928,59 +935,6 @@ func (d *SemaDecoder) DecodeTransactionLocation() (location common.TransactionLo
 	return
 }
 
-func (d *SemaDecoder) DecodeAddress() (address common.Address, err error) {
-	byteArray, err := d.read(common.AddressLength)
-	if err != nil {
-		return
-	}
-
-	for i, b := range byteArray {
-		address[i] = b
-	}
-
-	return
-}
-
-func (d *SemaDecoder) DecodeString() (s string, err error) {
-	b, err := d.DecodeBytes()
-	if err != nil {
-		return
-	}
-
-	s = string(b)
-	return
-}
-
-func (d *SemaDecoder) DecodeBytes() (bytes []byte, err error) {
-	length, err := d.DecodeLength()
-	if err != nil {
-		return
-	}
-
-	return d.read(length)
-}
-
-func (d *SemaDecoder) DecodeLength() (length int, err error) {
-	b, err := d.read(4)
-	if err != nil {
-		return
-	}
-
-	asUint32 := binary.BigEndian.Uint32(b)
-	length = int(asUint32)
-	return
-}
-
-func (d *SemaDecoder) DecodeUInt64() (u uint64, err error) {
-	err = binary.Read(&d.r, binary.BigEndian, &u)
-	return
-}
-
-func (d *SemaDecoder) DecodeInt64() (i int64, err error) {
-	err = binary.Read(&d.r, binary.BigEndian, &i)
-	return
-}
-
 func (d *SemaDecoder) read(howManyBytes int) (b []byte, err error) {
 	b = make([]byte, howManyBytes)
 	_, err = d.r.Read(b)
@@ -993,7 +947,7 @@ func DecodeArray[T any](d *SemaDecoder, decodeFn func() (T, error)) (arr []T, er
 		return
 	}
 
-	length, err := d.DecodeLength()
+	length, err := common_codec.DecodeLength(&d.r)
 	if err != nil {
 		return
 	}
@@ -1013,7 +967,7 @@ func DecodeArray[T any](d *SemaDecoder, decodeFn func() (T, error)) (arr []T, er
 }
 
 func DecodeMap[V sema.Type](d *SemaDecoder, mapToPopulate map[common.TypeID]V, decodeFn func() (V, error)) (err error) {
-	length, err := d.DecodeLength()
+	length, err := common_codec.DecodeLength(&d.r)
 	if err != nil {
 		return
 	}
@@ -1024,7 +978,7 @@ func DecodeMap[V sema.Type](d *SemaDecoder, mapToPopulate map[common.TypeID]V, d
 			v V
 		)
 
-		k, err = d.DecodeString()
+		k, err = common_codec.DecodeString(&d.r)
 		if err != nil {
 			return
 		}
