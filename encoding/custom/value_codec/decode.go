@@ -84,15 +84,12 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 	switch identifier {
 	case EncodedValueVoid:
 		value = cadence.NewMeteredVoid(d.memoryGauge)
-	}
-
-	switch identifier {
-	case EncodedValueVoid:
-		value = cadence.NewMeteredVoid(d.memoryGauge)
-	case EncodedValueBool:
-		value, err = d.DecodeBool()
 	case EncodedValueOptional:
 		value, err = d.DecodeOptional()
+	case EncodedValueBool:
+		value, err = d.DecodeBool()
+	case EncodedValueString:
+		value, err = d.DecodeString()
 	case EncodedValueArray:
 		value, err = d.DecodeArray()
 	}
@@ -134,6 +131,22 @@ func (d *Decoder) DecodeBool() (value cadence.Bool, err error) {
 	}
 
 	value = cadence.NewMeteredBool(d.memoryGauge, boolean)
+	return
+}
+
+func (d *Decoder) DecodeString() (value cadence.String, err error) {
+	s, err := common_codec.DecodeString(&d.r)
+	if err != nil {
+		return
+	}
+
+	value, err = cadence.NewMeteredString(
+		d.memoryGauge,
+		common.NewCadenceStringMemoryUsage(len(s)),
+		func() string {
+			return s
+		},
+	)
 	return
 }
 
