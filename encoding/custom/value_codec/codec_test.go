@@ -355,6 +355,58 @@ func TestValueCodecCharacter(t *testing.T) {
 	})
 }
 
+func TestValueCodecAddress(t *testing.T) {
+	t.Parallel()
+
+	t.Run("null address", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		value := cadence.NewAddress([8]byte{})
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueAddress)},
+				value.Bytes(),
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("some address", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		value := cadence.NewAddress([8]byte{255, 127, 62, 28, 8, 4, 2, 1})
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueAddress)},
+				value.Bytes(),
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+}
+
 func TestValueCodecArray(t *testing.T) {
 	t.Parallel()
 

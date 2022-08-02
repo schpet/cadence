@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/onflow/cadence"
 	"github.com/onflow/cadence/runtime/common"
 )
 
@@ -191,7 +192,7 @@ func DecodeString(r io.Reader) (s string, err error) {
 // Address
 //
 
-func EncodeAddress(w io.Writer, a common.Address) (err error) {
+func EncodeAddress[Address common.Address | cadence.Address](w io.Writer, a Address) (err error) {
 	_, err = w.Write(a[:])
 	return
 }

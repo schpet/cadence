@@ -94,6 +94,8 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeBytes()
 	case EncodedValueCharacter:
 		value, err = d.DecodeCharacter()
+	case EncodedValueAddress:
+		value, err = d.DecodeAddress()
 
 	case EncodedValueArray:
 		value, err = d.DecodeArray()
@@ -167,6 +169,19 @@ func (d *Decoder) DecodeCharacter() (value cadence.Character, err error) {
 		func() string {
 			return s
 		},
+	)
+	return
+}
+
+func (d *Decoder) DecodeAddress() (value cadence.Address, err error) {
+	address, err := common_codec.DecodeAddress(&d.r)
+	if err != nil {
+		return
+	}
+
+	value = cadence.NewMeteredAddress(
+		d.memoryGauge,
+		address,
 	)
 	return
 }
