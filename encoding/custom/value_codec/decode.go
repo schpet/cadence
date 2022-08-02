@@ -90,6 +90,9 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeBool()
 	case EncodedValueString:
 		value, err = d.DecodeString()
+	case EncodedValueBytes:
+		value, err = d.DecodeBytes()
+
 	case EncodedValueArray:
 		value, err = d.DecodeArray()
 	}
@@ -147,6 +150,16 @@ func (d *Decoder) DecodeString() (value cadence.String, err error) {
 			return s
 		},
 	)
+	return
+}
+
+func (d *Decoder) DecodeBytes() (value cadence.Bytes, err error) {
+	s, err := common_codec.DecodeBytes(&d.r)
+	if err != nil {
+		return
+	}
+
+	value = cadence.NewBytes(s)
 	return
 }
 

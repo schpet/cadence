@@ -9,7 +9,7 @@ const (
 	EncodedValueOptional
 	EncodedValueBool
 	EncodedValueString
-	EncodedValueBytes
+	EncodedValueBytes // NOTE: only used in tests so this might be removable
 	EncodedValueCharacter
 	EncodedValueAddress
 	EncodedValueInt

@@ -104,6 +104,12 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 			return
 		}
 		return common_codec.EncodeString(&e.w, string(v))
+	case cadence.Bytes:
+		err = e.EncodeValueIdentifier(EncodedValueBytes)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeBytes(&e.w, v)
 
 	case cadence.Array:
 		err = e.EncodeValueIdentifier(EncodedValueArray)
