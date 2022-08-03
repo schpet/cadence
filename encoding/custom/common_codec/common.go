@@ -22,6 +22,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math/big"
 
 	"github.com/onflow/cadence"
 	"github.com/onflow/cadence/runtime/common"
@@ -233,6 +234,39 @@ func EncodeUInt64(w io.Writer, i uint64) (err error) {
 
 func DecodeUInt64(r io.Reader) (i uint64, err error) {
 	err = binary.Read(r, binary.BigEndian, &i)
+	return
+}
+
+//
+// BigInt
+//
+
+func EncodeBigInt(w io.Writer, i *big.Int) (err error) {
+	isNegative := i.Sign() == -1
+	err = EncodeBool(w, isNegative)
+	if err != nil {
+		return
+	}
+
+	return EncodeBytes(w, i.Bytes())
+}
+
+func DecodeBigInt(r io.Reader) (i *big.Int, err error) {
+	isNegative, err := DecodeBool(r)
+	if err != nil {
+		return
+	}
+
+	bytes, err := DecodeBytes(r)
+	if err != nil {
+		return
+	}
+
+	i = big.NewInt(0)
+	i.SetBytes(bytes)
+	if isNegative {
+		i.Neg(i)
+	}
 	return
 }
 

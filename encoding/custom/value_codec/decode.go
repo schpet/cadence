@@ -23,6 +23,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math/big"
 
 	"github.com/onflow/cadence"
 	"github.com/onflow/cadence/encoding/custom/common_codec"
@@ -96,6 +97,8 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeCharacter()
 	case EncodedValueAddress:
 		value, err = d.DecodeAddress()
+	case EncodedValueInt:
+		value, err = d.DecodeInt()
 
 	case EncodedValueVariableArray:
 		var t cadence.VariableSizedArrayType
@@ -198,6 +201,22 @@ func (d *Decoder) DecodeAddress() (value cadence.Address, err error) {
 	return
 }
 
+func (d *Decoder) DecodeInt() (value cadence.Int, err error) {
+	i, err := common_codec.DecodeBigInt(&d.r)
+	if err != nil {
+		return
+	}
+
+	value = cadence.NewMeteredIntFromBig(
+		d.memoryGauge,
+		common.NewBigIntMemoryUsage(common.BigIntByteLength(i)),
+		func() *big.Int {
+			return i
+		},
+	)
+	return
+}
+
 func (d *Decoder) DecodeBytes() (value cadence.Bytes, err error) {
 	s, err := common_codec.DecodeBytes(&d.r)
 	if err != nil {
@@ -277,6 +296,8 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t = cadence.NewMeteredBytesType(d.memoryGauge)
 	case EncodedTypeAddress:
 		t = cadence.NewMeteredAddressType(d.memoryGauge)
+	case EncodedTypeInt:
+		t = cadence.NewMeteredIntType(d.memoryGauge)
 
 	case EncodedTypeVariableSizedArray:
 		t, err = d.DecodeVariableArrayType()

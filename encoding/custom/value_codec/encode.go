@@ -122,6 +122,12 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 			return
 		}
 		return common_codec.EncodeAddress(&e.w, v)
+	case cadence.Int:
+		err = e.EncodeValueIdentifier(EncodedValueInt)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeBigInt(&e.w, v.Big())
 
 	case cadence.Array:
 		switch arrayType := v.ArrayType.(type) {
@@ -212,6 +218,8 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 		return e.EncodeTypeIdentifier(EncodedTypeBytes)
 	case cadence.AddressType:
 		return e.EncodeTypeIdentifier(EncodedTypeAddress)
+	case cadence.IntType:
+		return e.EncodeTypeIdentifier(EncodedTypeInt)
 
 	case cadence.VariableSizedArrayType:
 		err = e.EncodeTypeIdentifier(EncodedTypeVariableSizedArray)
