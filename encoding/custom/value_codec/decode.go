@@ -97,8 +97,20 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 	case EncodedValueAddress:
 		value, err = d.DecodeAddress()
 
-	case EncodedValueArray:
-		value, err = d.DecodeArray()
+	case EncodedValueVariableArray:
+		var t cadence.VariableSizedArrayType
+		t, err = d.DecodeVariableArrayType()
+		if err != nil {
+			return
+		}
+		value, err = d.DecodeVariableArray(t)
+	case EncodedValueConstantArray:
+		var t cadence.ConstantSizedArrayType
+		t, err = d.DecodeConstantArrayType()
+		if err != nil {
+			return
+		}
+		value, err = d.DecodeConstantArray(t)
 	}
 
 	return
@@ -196,21 +208,10 @@ func (d *Decoder) DecodeBytes() (value cadence.Bytes, err error) {
 	return
 }
 
-func (d *Decoder) DecodeArray() (array cadence.Array, err error) {
-	arrayType, err := d.DecodeArrayType()
+func (d *Decoder) DecodeVariableArray(arrayType cadence.VariableSizedArrayType) (array cadence.Array, err error) {
+	size, err := d.DecodeLength()
 	if err != nil {
 		return
-	}
-
-	var size int
-	switch t := arrayType.(type) {
-	case cadence.ConstantSizedArrayType:
-		size = int(t.Size)
-	case cadence.VariableSizedArrayType:
-		size, err = d.DecodeLength()
-		if err != nil {
-			return
-		}
 	}
 	array, err = cadence.NewMeteredArray(d.memoryGauge, size, func() (elements []cadence.Value, err error) {
 		elements = make([]cadence.Value, 0, size)
@@ -232,31 +233,25 @@ func (d *Decoder) DecodeArray() (array cadence.Array, err error) {
 	return
 }
 
-func (d *Decoder) DecodeArrayType() (t cadence.ArrayType, err error) {
-	b, err := d.read(1)
-	if err != nil {
-		return
-	}
-	encodedArrayType := EncodedArrayType(b[0])
-
-	elementType, err := d.DecodeType()
-	if err != nil {
-		return
-	}
-
-	switch encodedArrayType {
-	case EncodedArrayTypeVariable:
-		t = cadence.NewMeteredVariableSizedArrayType(d.memoryGauge, elementType)
-	case EncodedArrayTypeConstant:
-		var size int
-		size, err = d.DecodeLength()
-		if err != nil {
-			return
+func (d *Decoder) DecodeConstantArray(arrayType cadence.ConstantSizedArrayType) (array cadence.Array, err error) {
+	size := int(arrayType.Size)
+	array, err = cadence.NewMeteredArray(d.memoryGauge, size, func() (elements []cadence.Value, err error) {
+		elements = make([]cadence.Value, 0, size)
+		for i := 0; i < size; i++ {
+			// TODO if `elementType` is concrete then each element needn't encode its type
+			var elementValue cadence.Value
+			elementValue, err = d.DecodeValue()
+			if err != nil {
+				return
+			}
+			elements = append(elements, elementValue)
 		}
-		t = cadence.NewMeteredConstantSizedArrayType(d.memoryGauge, uint(size), elementType)
-	default:
-		err = fmt.Errorf("invalid array type encoding: %d", encodedArrayType)
-	}
+
+		return elements, nil
+	})
+
+	array = array.WithType(arrayType)
+
 	return
 }
 
@@ -274,8 +269,19 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t, err = d.DecodeOptionalType()
 	case EncodedTypeBool:
 		t = cadence.NewMeteredBoolType(d.memoryGauge)
-	case EncodedTypeArray:
-		t, err = d.DecodeArrayType()
+	case EncodedTypeString:
+		t = cadence.NewMeteredStringType(d.memoryGauge)
+	case EncodedTypeCharacter:
+		t = cadence.NewMeteredCharacterType(d.memoryGauge)
+	case EncodedTypeBytes:
+		t = cadence.NewMeteredBytesType(d.memoryGauge)
+	case EncodedTypeAddress:
+		t = cadence.NewMeteredAddressType(d.memoryGauge)
+
+	case EncodedTypeVariableSizedArray:
+		t, err = d.DecodeVariableArrayType()
+	case EncodedTypeConstantSizedArray:
+		t, err = d.DecodeConstantArrayType()
 	case EncodedTypeAnyType:
 		t = cadence.NewMeteredAnyType(d.memoryGauge)
 	case EncodedTypeAnyStructType:
@@ -304,6 +310,30 @@ func (d *Decoder) DecodeOptionalType() (t cadence.OptionalType, err error) {
 	}
 
 	t = cadence.NewMeteredOptionalType(d.memoryGauge, elementType)
+	return
+}
+
+func (d *Decoder) DecodeVariableArrayType() (t cadence.VariableSizedArrayType, err error) {
+	elementType, err := d.DecodeType()
+	if err != nil {
+		return
+	}
+
+	t = cadence.NewMeteredVariableSizedArrayType(d.memoryGauge, elementType)
+	return
+}
+
+func (d *Decoder) DecodeConstantArrayType() (t cadence.ConstantSizedArrayType, err error) {
+	elementType, err := d.DecodeType()
+	if err != nil {
+		return
+	}
+
+	size, err := d.DecodeLength()
+	if err != nil {
+		return
+	}
+	t = cadence.NewMeteredConstantSizedArrayType(d.memoryGauge, uint(size), elementType)
 	return
 }
 

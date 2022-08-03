@@ -124,7 +124,20 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 		return common_codec.EncodeAddress(&e.w, v)
 
 	case cadence.Array:
-		err = e.EncodeValueIdentifier(EncodedValueArray)
+		switch arrayType := v.ArrayType.(type) {
+		case cadence.VariableSizedArrayType:
+			err = e.EncodeValueIdentifier(EncodedValueVariableArray)
+			if err != nil {
+				return
+			}
+			err = e.EncodeVariableArrayType(arrayType)
+		case cadence.ConstantSizedArrayType:
+			err = e.EncodeValueIdentifier(EncodedValueConstantArray)
+			if err != nil {
+				return
+			}
+			err = e.EncodeConstantArrayType(arrayType)
+		}
 		if err != nil {
 			return
 		}
@@ -148,13 +161,7 @@ func (e *Encoder) EncodeOptional(value cadence.Optional) (err error) {
 	return e.EncodeValue(value.Value)
 }
 
-// TODO handle encode/decode of the two array types in a cleaner way
 func (e *Encoder) EncodeArray(value cadence.Array) (err error) {
-	err = e.EncodeArrayType(value.ArrayType)
-	if err != nil {
-		return
-	}
-
 	switch v := value.ArrayType.(type) {
 	case cadence.VariableSizedArrayType:
 		err = e.EncodeLength(len(value.Values))
@@ -188,18 +195,40 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 	case cadence.BoolType:
 		return e.EncodeTypeIdentifier(EncodedTypeBool)
 	case cadence.OptionalType:
-		err = e.EncodeTypeIdentifier(EncodedTypeVoid)
+		err = e.EncodeTypeIdentifier(EncodedTypeOptional)
 		if err != nil {
 			return
 		}
-		return e.EncodeOptionalType(actualType)
+		err = common_codec.EncodeBool(&e.w, actualType.Type == nil)
+		if err != nil {
+			return
+		}
+		return e.EncodeType(actualType.Type)
+	case cadence.StringType:
+		return e.EncodeTypeIdentifier(EncodedTypeString)
+	case cadence.CharacterType:
+		return e.EncodeTypeIdentifier(EncodedTypeCharacter)
+	case cadence.BytesType:
+		return e.EncodeTypeIdentifier(EncodedTypeBytes)
+	case cadence.AddressType:
+		return e.EncodeTypeIdentifier(EncodedTypeAddress)
+
+	case cadence.VariableSizedArrayType:
+		err = e.EncodeTypeIdentifier(EncodedTypeVariableSizedArray)
+		if err != nil {
+			return
+		}
+		return e.EncodeVariableArrayType(actualType)
+	case cadence.ConstantSizedArrayType:
+		err = e.EncodeTypeIdentifier(EncodedTypeConstantSizedArray)
+		if err != nil {
+			return
+		}
+		return e.EncodeConstantArrayType(actualType)
 	case cadence.AnyType:
 		return e.EncodeTypeIdentifier(EncodedTypeAnyType)
 	case cadence.AnyStructType:
 		return e.EncodeTypeIdentifier(EncodedTypeAnyStructType)
-
-	case cadence.ArrayType:
-		return e.EncodeArrayType(actualType)
 	}
 
 	return fmt.Errorf("unknown type: %s", t)
@@ -209,36 +238,17 @@ func (e *Encoder) EncodeTypeIdentifier(id EncodedType) (err error) {
 	return e.write([]byte{byte(id)})
 }
 
-func (e *Encoder) EncodeOptionalType(t cadence.OptionalType) (err error) {
-	return e.EncodeType(t.Type)
+func (e *Encoder) EncodeVariableArrayType(t cadence.VariableSizedArrayType) (err error) {
+	return e.EncodeType(t.Element())
 }
 
-func (e *Encoder) EncodeArrayType(t cadence.ArrayType) (err error) {
-	var b EncodedArrayType
-	switch t.(type) {
-	case cadence.VariableSizedArrayType:
-		b = EncodedArrayTypeVariable
-	case cadence.ConstantSizedArrayType:
-		b = EncodedArrayTypeConstant
-	default:
-		return fmt.Errorf("unknown array type: %s", t)
-	}
-	err = e.write([]byte{byte(b)})
-	if err != nil {
-		return
-	}
-
+func (e *Encoder) EncodeConstantArrayType(t cadence.ConstantSizedArrayType) (err error) {
 	err = e.EncodeType(t.Element())
 	if err != nil {
 		return
 	}
 
-	switch concreteType := t.(type) {
-	case cadence.ConstantSizedArrayType:
-		err = e.EncodeLength(int(concreteType.Size))
-	}
-
-	return
+	return e.EncodeLength(int(t.Size))
 }
 
 //

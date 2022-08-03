@@ -32,7 +32,8 @@ const (
 	EncodedValueWord64
 	EncodedValueFix64
 	EncodedValueUFix64
-	EncodedValueArray
+	EncodedValueVariableArray
+	EncodedValueConstantArray
 	EncodedValueDictionary
 	EncodedValueStruct
 	EncodedValueResource
@@ -56,7 +57,6 @@ const (
 	EncodedTypeVoid
 	EncodedTypeNever
 	EncodedTypeBool
-	EncodedTypeArray
 	EncodedTypeOptional
 	EncodedTypeString
 	EncodedTypeCharacter
@@ -122,19 +122,10 @@ const (
 	EncodedTypeAnyStructType
 	EncodedTypeAnyResourceType
 
-	EncodedTypeArrau     // TODO is this necessary?
 	EncodedTypeComposite // TODO is this necessary?
 	EncodedTypeInterface // TODO is this necessary?
 
 	// TODO - classify
 
 	EncodedTypeMetaType
-)
-
-type EncodedArrayType byte
-
-const (
-	EncodedArrayTypeUnknown EncodedArrayType = iota
-	EncodedArrayTypeVariable
-	EncodedArrayTypeConstant
 )
