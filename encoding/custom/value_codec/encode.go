@@ -128,6 +128,120 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 			return
 		}
 		return common_codec.EncodeBigInt(&e.w, v.Big())
+	case cadence.Int8:
+		err = e.EncodeValueIdentifier(EncodedValueInt8)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, int8(v))
+	case cadence.Int16:
+		err = e.EncodeValueIdentifier(EncodedValueInt16)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, int16(v))
+	case cadence.Int32:
+		err = e.EncodeValueIdentifier(EncodedValueInt32)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, int32(v))
+	case cadence.Int64:
+		err = e.EncodeValueIdentifier(EncodedValueInt64)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, int64(v))
+	case cadence.Int128: // TODO encode more efficiently, as not a BigInt
+		err = e.EncodeValueIdentifier(EncodedValueInt128)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeBigInt(&e.w, v.Big())
+	case cadence.Int256:
+		err = e.EncodeValueIdentifier(EncodedValueInt256)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeBigInt(&e.w, v.Big())
+	case cadence.UInt:
+		err = e.EncodeValueIdentifier(EncodedValueUInt)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeBigInt(&e.w, v.Big())
+	case cadence.UInt8:
+		err = e.EncodeValueIdentifier(EncodedValueUInt8)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, int8(v))
+	case cadence.UInt16:
+		err = e.EncodeValueIdentifier(EncodedValueUInt16)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, int16(v))
+	case cadence.UInt32:
+		err = e.EncodeValueIdentifier(EncodedValueUInt32)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, int32(v))
+	case cadence.UInt64:
+		err = e.EncodeValueIdentifier(EncodedValueUInt64)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, int64(v))
+	case cadence.UInt128:
+		err = e.EncodeValueIdentifier(EncodedValueUInt128)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeBigInt(&e.w, v.Big())
+	case cadence.UInt256:
+		err = e.EncodeValueIdentifier(EncodedValueUInt256)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeBigInt(&e.w, v.Big())
+	case cadence.Word8:
+		err = e.EncodeValueIdentifier(EncodedValueWord8)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, uint8(v))
+	case cadence.Word16:
+		err = e.EncodeValueIdentifier(EncodedValueWord16)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, uint16(v))
+	case cadence.Word32:
+		err = e.EncodeValueIdentifier(EncodedValueWord32)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, uint32(v))
+	case cadence.Word64:
+		err = e.EncodeValueIdentifier(EncodedValueWord64)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, uint64(v))
+	case cadence.Fix64:
+		err = e.EncodeValueIdentifier(EncodedValueFix64)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, int64(v))
+	case cadence.UFix64:
+		err = e.EncodeValueIdentifier(EncodedValueUFix64)
+		if err != nil {
+			return
+		}
+		return common_codec.EncodeNumber(&e.w, uint64(v))
 
 	case cadence.Array:
 		switch arrayType := v.ArrayType.(type) {
@@ -220,6 +334,36 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 		return e.EncodeTypeIdentifier(EncodedTypeAddress)
 	case cadence.IntType:
 		return e.EncodeTypeIdentifier(EncodedTypeInt)
+	case cadence.Int8Type:
+		return e.EncodeTypeIdentifier(EncodedTypeInt8)
+	case cadence.Int16Type:
+		return e.EncodeTypeIdentifier(EncodedTypeInt16)
+	case cadence.Int32Type:
+		return e.EncodeTypeIdentifier(EncodedTypeInt32)
+	case cadence.Int64Type:
+		return e.EncodeTypeIdentifier(EncodedTypeInt64)
+	case cadence.UIntType:
+		return e.EncodeTypeIdentifier(EncodedTypeUInt)
+	case cadence.UInt8Type:
+		return e.EncodeTypeIdentifier(EncodedTypeUInt8)
+	case cadence.UInt16Type:
+		return e.EncodeTypeIdentifier(EncodedTypeUInt16)
+	case cadence.UInt32Type:
+		return e.EncodeTypeIdentifier(EncodedTypeUInt32)
+	case cadence.UInt64Type:
+		return e.EncodeTypeIdentifier(EncodedTypeUInt64)
+	case cadence.Word8Type:
+		return e.EncodeTypeIdentifier(EncodedTypeWord8)
+	case cadence.Word16Type:
+		return e.EncodeTypeIdentifier(EncodedTypeWord16)
+	case cadence.Word32Type:
+		return e.EncodeTypeIdentifier(EncodedTypeWord32)
+	case cadence.Word64Type:
+		return e.EncodeTypeIdentifier(EncodedTypeWord64)
+	case cadence.Fix64Type:
+		return e.EncodeTypeIdentifier(EncodedTypeFix64)
+	case cadence.UFix64Type:
+		return e.EncodeTypeIdentifier(EncodedTypeUFix64)
 
 	case cadence.VariableSizedArrayType:
 		err = e.EncodeTypeIdentifier(EncodedTypeVariableSizedArray)

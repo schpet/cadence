@@ -184,12 +184,12 @@ func TestSemaCodecMiscValues(t *testing.T) {
 
 		i := uint64(1<<63) + 17
 
-		err := common_codec.EncodeUInt64(&w, i)
+		err := common_codec.EncodeNumber(&w, i)
 		require.NoError(t, err, "encoding error")
 
 		assert.Equal(t, w.Bytes(), []byte{128, 0, 0, 0, 0, 0, 0, 17}, "encoded bytes differ")
 
-		output, err := common_codec.DecodeUInt64(&w)
+		output, err := common_codec.DecodeNumber(&w)
 		require.NoError(t, err, "decoding error")
 
 		assert.Equal(t, i, output)
@@ -202,12 +202,12 @@ func TestSemaCodecMiscValues(t *testing.T) {
 
 		i := int64(1<<62) + 17
 
-		err := common_codec.EncodeInt64(&w, i)
+		err := common_codec.EncodeNumber(&w, i)
 		require.NoError(t, err, "encoding error")
 
 		assert.Equal(t, w.Bytes(), []byte{64, 0, 0, 0, 0, 0, 0, 17}, "encoded bytes differ")
 
-		output, err := common_codec.DecodeInt64(&w)
+		output, err := common_codec.DecodeNumber(&w)
 		require.NoError(t, err, "decoding error")
 
 		assert.Equal(t, i, output)
@@ -220,12 +220,12 @@ func TestSemaCodecMiscValues(t *testing.T) {
 
 		i := -(int64(1<<62) + 17)
 
-		err := common_codec.EncodeInt64(&w, i)
+		err := common_codec.EncodeNumber(&w, i)
 		require.NoError(t, err, "encoding error")
 
 		assert.Equal(t, w.Bytes(), []byte{0xff - 64, 0xff - 0, 0xff - 0, 0xff - 0, 0xff - 0, 0xff - 0, 0xff - 0, 0xff - 17 + 1}, "encoded bytes differ")
 
-		output, err := common_codec.DecodeInt64(&w)
+		output, err := common_codec.DecodeNumber(&w)
 		require.NoError(t, err, "decoding error")
 
 		assert.Equal(t, i, output)

@@ -299,7 +299,7 @@ func (e *SemaEncoder) EncodeIntPointer(ptr *int) (err error) {
 		return
 	}
 
-	return common_codec.EncodeInt64(&e.w, int64(*ptr))
+	return common_codec.EncodeNumber(&e.w, int64(*ptr))
 }
 
 func (e *SemaEncoder) EncodeDictionaryType(t *sema.DictionaryType) (err error) {
@@ -368,7 +368,7 @@ func (e *SemaEncoder) EncodeConstantSizedType(t *sema.ConstantSizedType) (err er
 		return
 	}
 
-	return common_codec.EncodeInt64(&e.w, t.Size)
+	return common_codec.EncodeNumber(&e.w, t.Size)
 }
 
 func (e *SemaEncoder) EncodeGenericType(t *sema.GenericType) (err error) {
@@ -675,7 +675,7 @@ func (e *SemaEncoder) EncodeStringTypeOrderedMap(om *sema.StringTypeOrderedMap) 
 }
 
 func (e *SemaEncoder) EncodeMember(member *sema.Member) (err error) {
-	err = common_codec.EncodeUInt64(&e.w, uint64(member.Access))
+	err = common_codec.EncodeNumber(&e.w, uint64(member.Access))
 	if err != nil {
 		return
 	}
@@ -690,12 +690,12 @@ func (e *SemaEncoder) EncodeMember(member *sema.Member) (err error) {
 		return
 	}
 
-	err = common_codec.EncodeUInt64(&e.w, uint64(member.DeclarationKind))
+	err = common_codec.EncodeNumber(&e.w, uint64(member.DeclarationKind))
 	if err != nil {
 		return
 	}
 
-	err = common_codec.EncodeUInt64(&e.w, uint64(member.VariableKind))
+	err = common_codec.EncodeNumber(&e.w, uint64(member.VariableKind))
 	if err != nil {
 		return
 	}
@@ -739,17 +739,17 @@ func (e *SemaEncoder) EncodeAstIdentifier(id ast.Identifier) (err error) {
 }
 
 func (e *SemaEncoder) EncodeAstPosition(pos ast.Position) (err error) {
-	err = common_codec.EncodeInt64(&e.w, int64(pos.Offset))
+	err = common_codec.EncodeNumber(&e.w, int64(pos.Offset))
 	if err != nil {
 		return
 	}
 
-	err = common_codec.EncodeInt64(&e.w, int64(pos.Line))
+	err = common_codec.EncodeNumber(&e.w, int64(pos.Line))
 	if err != nil {
 		return
 	}
 
-	return common_codec.EncodeInt64(&e.w, int64(pos.Column))
+	return common_codec.EncodeNumber(&e.w, int64(pos.Column))
 }
 
 func (e *SemaEncoder) EncodeInterfaceType(interfaceType *sema.InterfaceType) (err error) {

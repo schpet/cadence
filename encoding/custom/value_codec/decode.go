@@ -99,6 +99,24 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeAddress()
 	case EncodedValueInt:
 		value, err = d.DecodeInt()
+	case EncodedValueInt8:
+		value, err = d.DecodeInt8()
+	case EncodedValueInt16:
+		value, err = d.DecodeInt16()
+	case EncodedValueInt32:
+		value, err = d.DecodeInt32()
+	case EncodedValueInt64:
+		value, err = d.DecodeInt64()
+	case EncodedValueUInt:
+		value, err = d.DecodeUInt()
+	case EncodedValueUInt8:
+		value, err = d.DecodeUInt8()
+	case EncodedValueUInt16:
+		value, err = d.DecodeUInt16()
+	case EncodedValueUInt32:
+		value, err = d.DecodeUInt32()
+	case EncodedValueUInt64:
+		value, err = d.DecodeUInt64()
 
 	case EncodedValueVariableArray:
 		var t cadence.VariableSizedArrayType
@@ -217,6 +235,68 @@ func (d *Decoder) DecodeInt() (value cadence.Int, err error) {
 	return
 }
 
+func (d *Decoder) DecodeInt8() (value cadence.Int8, err error) {
+	i, err := common_codec.DecodeNumber[int8](&d.r)
+	value = cadence.Int8(i)
+	return
+}
+
+func (d *Decoder) DecodeInt16() (value cadence.Int16, err error) {
+	i, err := common_codec.DecodeNumber[int16](&d.r)
+	value = cadence.Int16(i)
+	return
+}
+
+func (d *Decoder) DecodeInt32() (value cadence.Int32, err error) {
+	i, err := common_codec.DecodeNumber[int32](&d.r)
+	value = cadence.Int32(i)
+	return
+}
+
+func (d *Decoder) DecodeInt64() (value cadence.Int64, err error) {
+	i, err := common_codec.DecodeNumber[int64](&d.r)
+	value = cadence.Int64(i)
+	return
+}
+
+func (d *Decoder) DecodeUInt() (value cadence.UInt, err error) {
+	i, err := common_codec.DecodeBigInt(&d.r)
+	if err != nil {
+		return
+	}
+
+	return cadence.NewMeteredUIntFromBig(
+		d.memoryGauge,
+		common.NewBigIntMemoryUsage(common.BigIntByteLength(i)),
+		func() *big.Int {
+			return i
+		},
+	)
+}
+func (d *Decoder) DecodeUInt8() (value cadence.UInt8, err error) {
+	i, err := common_codec.DecodeNumber[uint8](&d.r)
+	value = cadence.UInt8(i)
+	return
+}
+
+func (d *Decoder) DecodeUInt16() (value cadence.UInt16, err error) {
+	i, err := common_codec.DecodeNumber[uint16](&d.r)
+	value = cadence.UInt16(i)
+	return
+}
+
+func (d *Decoder) DecodeUInt32() (value cadence.UInt32, err error) {
+	i, err := common_codec.DecodeNumber[uint32](&d.r)
+	value = cadence.UInt32(i)
+	return
+}
+
+func (d *Decoder) DecodeUInt64() (value cadence.UInt64, err error) {
+	i, err := common_codec.DecodeNumber[uint64](&d.r)
+	value = cadence.UInt64(i)
+	return
+}
+
 func (d *Decoder) DecodeBytes() (value cadence.Bytes, err error) {
 	s, err := common_codec.DecodeBytes(&d.r)
 	if err != nil {
@@ -298,6 +378,36 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t = cadence.NewMeteredAddressType(d.memoryGauge)
 	case EncodedTypeInt:
 		t = cadence.NewMeteredIntType(d.memoryGauge)
+	case EncodedTypeInt8:
+		t = cadence.NewMeteredInt8Type(d.memoryGauge)
+	case EncodedTypeInt16:
+		t = cadence.NewMeteredInt16Type(d.memoryGauge)
+	case EncodedTypeInt32:
+		t = cadence.NewMeteredInt32Type(d.memoryGauge)
+	case EncodedTypeInt64:
+		t = cadence.NewMeteredInt64Type(d.memoryGauge)
+	case EncodedTypeUInt:
+		t = cadence.NewMeteredUIntType(d.memoryGauge)
+	case EncodedTypeUInt8:
+		t = cadence.NewMeteredUInt8Type(d.memoryGauge)
+	case EncodedTypeUInt16:
+		t = cadence.NewMeteredUInt16Type(d.memoryGauge)
+	case EncodedTypeUInt32:
+		t = cadence.NewMeteredUInt32Type(d.memoryGauge)
+	case EncodedTypeUInt64:
+		t = cadence.NewMeteredUInt64Type(d.memoryGauge)
+	case EncodedTypeWord8:
+		t = cadence.NewMeteredWord8Type(d.memoryGauge)
+	case EncodedTypeWord16:
+		t = cadence.NewMeteredWord16Type(d.memoryGauge)
+	case EncodedTypeWord32:
+		t = cadence.NewMeteredWord32Type(d.memoryGauge)
+	case EncodedTypeWord64:
+		t = cadence.NewMeteredWord64Type(d.memoryGauge)
+	case EncodedTypeFix64:
+		t = cadence.NewMeteredFix64Type(d.memoryGauge)
+	case EncodedTypeUFix64:
+		t = cadence.NewMeteredUFix64Type(d.memoryGauge)
 
 	case EncodedTypeVariableSizedArray:
 		t, err = d.DecodeVariableArrayType()

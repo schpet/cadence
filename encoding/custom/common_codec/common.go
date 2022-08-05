@@ -210,29 +210,16 @@ func DecodeAddress(r io.Reader) (a common.Address, err error) {
 }
 
 //
-// Int64
+// U?Int(8,16,32,64)
 //
 
 // TODO use a more efficient encoder than `binary` (they say to in their top source comment)
 
-func EncodeInt64(w io.Writer, i int64) (err error) {
+func EncodeNumber[T int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64](w io.Writer, i T) (err error) {
 	return binary.Write(w, binary.BigEndian, i)
 }
 
-func DecodeInt64(r io.Reader) (i int64, err error) {
-	err = binary.Read(r, binary.BigEndian, &i)
-	return
-}
-
-//
-// UInt64
-//
-
-func EncodeUInt64(w io.Writer, i uint64) (err error) {
-	return binary.Write(w, binary.BigEndian, i)
-}
-
-func DecodeUInt64(r io.Reader) (i uint64, err error) {
+func DecodeNumber[T int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64](r io.Reader) (i T, err error) {
 	err = binary.Read(r, binary.BigEndian, &i)
 	return
 }
