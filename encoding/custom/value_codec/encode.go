@@ -20,7 +20,6 @@ package value_codec
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 
@@ -289,7 +288,7 @@ func (e *Encoder) EncodeOptional(value cadence.Optional) (err error) {
 func (e *Encoder) EncodeArray(value cadence.Array) (err error) {
 	switch v := value.ArrayType.(type) {
 	case cadence.VariableSizedArrayType:
-		err = e.EncodeLength(len(value.Values))
+		err = common_codec.EncodeLength(&e.w, len(value.Values))
 		if err != nil {
 			return
 		}
@@ -458,7 +457,7 @@ func (e *Encoder) EncodeConstantArrayType(t cadence.ConstantSizedArrayType) (err
 		return
 	}
 
-	return e.EncodeLength(int(t.Size))
+	return common_codec.EncodeLength(&e.w, int(t.Size))
 }
 
 func (e *Encoder) EncodeDictionaryType(t cadence.DictionaryType) (err error) {
@@ -472,19 +471,6 @@ func (e *Encoder) EncodeDictionaryType(t cadence.DictionaryType) (err error) {
 //
 // Other
 //
-
-// TODO remove this and use the common_codec one
-// EncodeLength encodes a non-negative length as a uint32.
-// It uses 4 bytes.
-func (e *Encoder) EncodeLength(length int) (err error) {
-	if length < 0 { // TODO is this safety check useful?
-		return fmt.Errorf("cannot encode length below zero: %d", length)
-	}
-
-	l := uint32(length)
-
-	return binary.Write(&e.w, binary.BigEndian, l)
-}
 
 func (e *Encoder) write(b []byte) (err error) {
 	_, err = e.w.Write(b)
