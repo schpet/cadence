@@ -206,43 +206,42 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 			return
 		}
 		return common_codec.EncodeBigInt(&e.w, v.Big())
-	case cadence.Word8:
+	case cadence.Word8: // TODO add test
 		err = e.EncodeValueIdentifier(EncodedValueWord8)
 		if err != nil {
 			return
 		}
 		return common_codec.EncodeNumber(&e.w, uint8(v))
-	case cadence.Word16:
+	case cadence.Word16: // TODO add test
 		err = e.EncodeValueIdentifier(EncodedValueWord16)
 		if err != nil {
 			return
 		}
 		return common_codec.EncodeNumber(&e.w, uint16(v))
-	case cadence.Word32:
+	case cadence.Word32: // TODO add test
 		err = e.EncodeValueIdentifier(EncodedValueWord32)
 		if err != nil {
 			return
 		}
 		return common_codec.EncodeNumber(&e.w, uint32(v))
-	case cadence.Word64:
+	case cadence.Word64: // TODO add test
 		err = e.EncodeValueIdentifier(EncodedValueWord64)
 		if err != nil {
 			return
 		}
 		return common_codec.EncodeNumber(&e.w, uint64(v))
-	case cadence.Fix64:
+	case cadence.Fix64: // TODO add test
 		err = e.EncodeValueIdentifier(EncodedValueFix64)
 		if err != nil {
 			return
 		}
 		return common_codec.EncodeNumber(&e.w, int64(v))
-	case cadence.UFix64:
+	case cadence.UFix64: // TODO add test
 		err = e.EncodeValueIdentifier(EncodedValueUFix64)
 		if err != nil {
 			return
 		}
 		return common_codec.EncodeNumber(&e.w, uint64(v))
-
 	case cadence.Array:
 		switch arrayType := v.ArrayType.(type) {
 		case cadence.VariableSizedArrayType:
@@ -262,6 +261,12 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 			return
 		}
 		return e.EncodeArray(v)
+	case cadence.Dictionary:
+		err = e.EncodeValueIdentifier(EncodedValueDictionary)
+		if err != nil {
+			return
+		}
+		return e.EncodeDictionary(v)
 	}
 
 	return fmt.Errorf("unexpected value: ${value}")
@@ -304,6 +309,29 @@ func (e *Encoder) EncodeArray(value cadence.Array) (err error) {
 	return
 }
 
+func (e *Encoder) EncodeDictionary(value cadence.Dictionary) (err error) {
+	err = e.EncodeDictionaryType(value.DictionaryType)
+	if err != nil {
+		return
+	}
+	err = common_codec.EncodeLength(&e.w, len(value.Pairs))
+	if err != nil {
+		return
+	}
+	// TODO if dictionary type is concrete for key or value, don't encode type info for them
+	for _, kv := range value.Pairs {
+		err = e.EncodeValue(kv.Key)
+		if err != nil {
+			return
+		}
+		err = e.EncodeValue(kv.Value)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
 //
 // Types
 //
@@ -342,6 +370,10 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 		return e.EncodeTypeIdentifier(EncodedTypeInt32)
 	case cadence.Int64Type:
 		return e.EncodeTypeIdentifier(EncodedTypeInt64)
+	case cadence.Int128Type:
+		return e.EncodeTypeIdentifier(EncodedTypeInt128)
+	case cadence.Int256Type:
+		return e.EncodeTypeIdentifier(EncodedTypeInt256)
 	case cadence.UIntType:
 		return e.EncodeTypeIdentifier(EncodedTypeUInt)
 	case cadence.UInt8Type:
@@ -352,6 +384,10 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 		return e.EncodeTypeIdentifier(EncodedTypeUInt32)
 	case cadence.UInt64Type:
 		return e.EncodeTypeIdentifier(EncodedTypeUInt64)
+	case cadence.UInt128Type:
+		return e.EncodeTypeIdentifier(EncodedTypeUInt128)
+	case cadence.UInt256Type:
+		return e.EncodeTypeIdentifier(EncodedTypeUInt256)
 	case cadence.Word8Type:
 		return e.EncodeTypeIdentifier(EncodedTypeWord8)
 	case cadence.Word16Type:
@@ -364,7 +400,6 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 		return e.EncodeTypeIdentifier(EncodedTypeFix64)
 	case cadence.UFix64Type:
 		return e.EncodeTypeIdentifier(EncodedTypeUFix64)
-
 	case cadence.VariableSizedArrayType:
 		err = e.EncodeTypeIdentifier(EncodedTypeVariableSizedArray)
 		if err != nil {
@@ -377,10 +412,33 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 			return
 		}
 		return e.EncodeConstantArrayType(actualType)
+	case cadence.DictionaryType:
+		err = e.EncodeTypeIdentifier(EncodedTypeDictionary)
+		if err != nil {
+			return
+		}
+		return e.EncodeDictionaryType(actualType)
+
+	case cadence.NeverType:
+		return e.EncodeTypeIdentifier(EncodedTypeNever)
+	case cadence.NumberType:
+		return e.EncodeTypeIdentifier(EncodedTypeNumber)
+	case cadence.SignedNumberType:
+		return e.EncodeTypeIdentifier(EncodedTypeSignedNumber)
+	case cadence.IntegerType:
+		return e.EncodeTypeIdentifier(EncodedTypeInteger)
+	case cadence.SignedIntegerType:
+		return e.EncodeTypeIdentifier(EncodedTypeSignedInteger)
+	case cadence.FixedPointType:
+		return e.EncodeTypeIdentifier(EncodedTypeFixedPoint)
+	case cadence.SignedFixedPointType:
+		return e.EncodeTypeIdentifier(EncodedTypeSignedFixedPoint)
 	case cadence.AnyType:
 		return e.EncodeTypeIdentifier(EncodedTypeAnyType)
 	case cadence.AnyStructType:
 		return e.EncodeTypeIdentifier(EncodedTypeAnyStructType)
+	case cadence.AnyResourceType:
+		return e.EncodeTypeIdentifier(EncodedTypeAnyResourceType)
 	}
 
 	return fmt.Errorf("unknown type: %s", t)
@@ -403,10 +461,19 @@ func (e *Encoder) EncodeConstantArrayType(t cadence.ConstantSizedArrayType) (err
 	return e.EncodeLength(int(t.Size))
 }
 
+func (e *Encoder) EncodeDictionaryType(t cadence.DictionaryType) (err error) {
+	err = e.EncodeType(t.KeyType)
+	if err != nil {
+		return
+	}
+	return e.EncodeType(t.ElementType)
+}
+
 //
 // Other
 //
 
+// TODO remove this and use the common_codec one
 // EncodeLength encodes a non-negative length as a uint32.
 // It uses 4 bytes.
 func (e *Encoder) EncodeLength(length int) (err error) {

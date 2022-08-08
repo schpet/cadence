@@ -37,7 +37,7 @@ const (
 	EncodedValueDictionary
 	EncodedValueStruct
 	EncodedValueResource
-	EncodedValueEvebt
+	EncodedValueEvent
 	EncodedValueContract
 	EncodedValueLink
 	EncodedValuePath
@@ -55,19 +55,12 @@ const (
 	// Concrete Types
 
 	EncodedTypeVoid
-	EncodedTypeNever
 	EncodedTypeBool
 	EncodedTypeOptional
 	EncodedTypeString
 	EncodedTypeCharacter
 	EncodedTypeBytes
 	EncodedTypeAddress
-	EncodedTypeNumber
-	EncodedTypeSignedNumber
-	EncodedTypeInteger
-	EncodedTypeSignedInteger
-	EncodedTypeFixedPoint
-	EncodedTypeSignedFixedPoint
 	EncodedTypeInt
 	EncodedTypeInt8
 	EncodedTypeInt16
@@ -118,6 +111,13 @@ const (
 
 	// Abstract Types
 
+	EncodedTypeNever
+	EncodedTypeNumber
+	EncodedTypeSignedNumber
+	EncodedTypeInteger
+	EncodedTypeSignedInteger
+	EncodedTypeFixedPoint
+	EncodedTypeSignedFixedPoint
 	EncodedTypeAnyType
 	EncodedTypeAnyStructType
 	EncodedTypeAnyResourceType

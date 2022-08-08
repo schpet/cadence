@@ -670,6 +670,380 @@ func TestValueCodecInt(t *testing.T) {
 	})
 }
 
+func TestValueCodecInt128(t *testing.T) {
+	t.Parallel()
+
+	t.Run("small positive", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		i0 := 255
+		value := cadence.NewInt128(i0)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueInt128)},
+				[]byte{byte(common_codec.EncodedBoolFalse)}, // not negative
+				[]byte{0, 0, 0, 1},
+				[]byte{byte(i0)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("large positive", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		i0 := 0
+		i1 := 1
+		value := cadence.NewInt128(256)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueInt128)},
+				[]byte{byte(common_codec.EncodedBoolFalse)}, // not negative
+				[]byte{0, 0, 0, 2},
+				[]byte{byte(i1), byte(i0)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("negative", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		i0 := -4
+		value := cadence.NewInt128(i0)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueInt128)},
+				[]byte{byte(common_codec.EncodedBoolTrue)}, // negative
+				[]byte{0, 0, 0, 1},
+				[]byte{byte(-i0)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("type", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewInt128Type()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypeInt128)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+}
+
+func TestValueCodecInt256(t *testing.T) {
+	t.Parallel()
+
+	t.Run("small positive", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		i0 := 255
+		value := cadence.NewInt256(i0)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueInt256)},
+				[]byte{byte(common_codec.EncodedBoolFalse)}, // not negative
+				[]byte{0, 0, 0, 1},
+				[]byte{byte(i0)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("large positive", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		i0 := 0
+		i1 := 1
+		value := cadence.NewInt256(256)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueInt256)},
+				[]byte{byte(common_codec.EncodedBoolFalse)}, // not negative
+				[]byte{0, 0, 0, 2},
+				[]byte{byte(i1), byte(i0)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("negative", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		i0 := -4
+		value := cadence.NewInt256(i0)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueInt256)},
+				[]byte{byte(common_codec.EncodedBoolTrue)}, // negative
+				[]byte{0, 0, 0, 1},
+				[]byte{byte(-i0)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("type", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewInt256Type()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypeInt256)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+}
+
+func TestValueCodecUInt128(t *testing.T) {
+	t.Parallel()
+
+	t.Run("small positive", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		i0 := uint(255)
+		value := cadence.NewUInt128(i0)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueUInt128)},
+				[]byte{byte(common_codec.EncodedBoolFalse)}, // not negative
+				[]byte{0, 0, 0, 1},
+				[]byte{byte(i0)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("large positive", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		i0 := 0
+		i1 := 1
+		value := cadence.NewUInt128(256)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueUInt128)},
+				[]byte{byte(common_codec.EncodedBoolFalse)}, // not negative
+				[]byte{0, 0, 0, 2},
+				[]byte{byte(i1), byte(i0)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("type", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewUInt128Type()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypeUInt128)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+}
+
+func TestValueCodecUInt256(t *testing.T) {
+	t.Parallel()
+
+	t.Run("small positive", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		i0 := uint(255)
+		value := cadence.NewUInt256(i0)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueUInt256)},
+				[]byte{byte(common_codec.EncodedBoolFalse)}, // not negative
+				[]byte{0, 0, 0, 1},
+				[]byte{byte(i0)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("large positive", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		i0 := 0
+		i1 := 1
+		value := cadence.NewUInt256(256)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueUInt256)},
+				[]byte{byte(common_codec.EncodedBoolFalse)}, // not negative
+				[]byte{0, 0, 0, 2},
+				[]byte{byte(i1), byte(i0)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("type", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewUInt256Type()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypeUInt256)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+}
+
 func TestValueCodecUInt(t *testing.T) {
 	t.Parallel()
 
@@ -1305,6 +1679,263 @@ func TestValueCodecArray(t *testing.T) {
 
 		assert.Equal(t, typ, output, "decoded type differs")
 	})
+}
+
+func TestValueCodecDictionary(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		dictionaryType := cadence.NewDictionaryType(cadence.Fix64Type{}, cadence.FixedPointType{})
+
+		value := cadence.NewDictionary([]cadence.KeyValuePair{}).
+			WithType(dictionaryType)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{
+				byte(value_codec.EncodedValueDictionary),
+				byte(value_codec.EncodedTypeFix64),
+				byte(value_codec.EncodedTypeFixedPoint),
+				0, 0, 0, 0,
+			},
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("two elements", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		dictionaryType := cadence.NewDictionaryType(cadence.Fix64Type{}, cadence.FixedPointType{})
+
+		pairs := []cadence.KeyValuePair{
+			{
+				Key:   cadence.Fix64(8),
+				Value: cadence.UFix64(3),
+			},
+			{
+				Key:   cadence.Fix64(7),
+				Value: cadence.Fix64(18),
+			},
+		}
+		value := cadence.NewDictionary(pairs).
+			WithType(dictionaryType)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{
+				byte(value_codec.EncodedValueDictionary),
+				byte(value_codec.EncodedTypeFix64),
+				byte(value_codec.EncodedTypeFixedPoint),
+				0, 0, 0, byte(len(pairs)),
+				byte(value_codec.EncodedValueFix64),
+				0, 0, 0, 0, 0, 0, 0, 8,
+				byte(value_codec.EncodedValueUFix64),
+				0, 0, 0, 0, 0, 0, 0, 3,
+				byte(value_codec.EncodedValueFix64),
+				0, 0, 0, 0, 0, 0, 0, 7,
+				byte(value_codec.EncodedValueFix64),
+				0, 0, 0, 0, 0, 0, 0, 18,
+			},
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("type", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewDictionaryType(cadence.AnyResourceType{}, cadence.SignedNumberType{})
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{
+				byte(value_codec.EncodedTypeDictionary),
+				byte(value_codec.EncodedTypeAnyResourceType),
+				byte(value_codec.EncodedTypeSignedNumber),
+			},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+}
+
+func TestValueCodecAbstractTypes(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Never", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewNeverType()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypeNever)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+
+	t.Run("Number", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewNumberType()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypeNumber)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+
+	t.Run("SignedNumber", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewSignedNumberType()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypeSignedNumber)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+
+	t.Run("Integer", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewIntegerType()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypeInteger)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+
+	t.Run("SignedInteger", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewSignedIntegerType()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypeSignedInteger)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+
+	t.Run("FixedPoint", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewFixedPointType()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypeFixedPoint)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+
+	t.Run("SignedFixedPoint", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewSignedFixedPointType()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypeSignedFixedPoint)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+
 }
 
 func NewTestCodec() (encoder *value_codec.Encoder, decoder *value_codec.Decoder, buffer *bytes.Buffer) {

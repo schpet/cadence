@@ -107,6 +107,10 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeInt32()
 	case EncodedValueInt64:
 		value, err = d.DecodeInt64()
+	case EncodedValueInt128:
+		value, err = d.DecodeInt128()
+	case EncodedValueInt256:
+		value, err = d.DecodeInt256()
 	case EncodedValueUInt:
 		value, err = d.DecodeUInt()
 	case EncodedValueUInt8:
@@ -117,6 +121,22 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeUInt32()
 	case EncodedValueUInt64:
 		value, err = d.DecodeUInt64()
+	case EncodedValueUInt128:
+		value, err = d.DecodeUInt128()
+	case EncodedValueUInt256:
+		value, err = d.DecodeUInt256()
+	case EncodedValueWord8:
+		value, err = d.DecodeWord8()
+	case EncodedValueWord16:
+		value, err = d.DecodeWord16()
+	case EncodedValueWord32:
+		value, err = d.DecodeWord32()
+	case EncodedValueWord64:
+		value, err = d.DecodeWord64()
+	case EncodedValueFix64:
+		value, err = d.DecodeFix64()
+	case EncodedValueUFix64:
+		value, err = d.DecodeUFix64()
 
 	case EncodedValueVariableArray:
 		var t cadence.VariableSizedArrayType
@@ -132,6 +152,11 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 			return
 		}
 		value, err = d.DecodeConstantArray(t)
+	case EncodedValueDictionary:
+		value, err = d.DecodeDictionary()
+
+	default:
+		err = fmt.Errorf("unknown cadence.Value: %s", value)
 	}
 
 	return
@@ -259,6 +284,34 @@ func (d *Decoder) DecodeInt64() (value cadence.Int64, err error) {
 	return
 }
 
+func (d *Decoder) DecodeInt128() (value cadence.Int128, err error) {
+	i, err := common_codec.DecodeBigInt(&d.r)
+	if err != nil {
+		return
+	}
+
+	return cadence.NewMeteredInt128FromBig(
+		d.memoryGauge,
+		func() *big.Int {
+			return i
+		},
+	)
+}
+
+func (d *Decoder) DecodeInt256() (value cadence.Int256, err error) {
+	i, err := common_codec.DecodeBigInt(&d.r)
+	if err != nil {
+		return
+	}
+
+	return cadence.NewMeteredInt256FromBig(
+		d.memoryGauge,
+		func() *big.Int {
+			return i
+		},
+	)
+}
+
 func (d *Decoder) DecodeUInt() (value cadence.UInt, err error) {
 	i, err := common_codec.DecodeBigInt(&d.r)
 	if err != nil {
@@ -273,6 +326,7 @@ func (d *Decoder) DecodeUInt() (value cadence.UInt, err error) {
 		},
 	)
 }
+
 func (d *Decoder) DecodeUInt8() (value cadence.UInt8, err error) {
 	i, err := common_codec.DecodeNumber[uint8](&d.r)
 	value = cadence.UInt8(i)
@@ -294,6 +348,88 @@ func (d *Decoder) DecodeUInt32() (value cadence.UInt32, err error) {
 func (d *Decoder) DecodeUInt64() (value cadence.UInt64, err error) {
 	i, err := common_codec.DecodeNumber[uint64](&d.r)
 	value = cadence.UInt64(i)
+	return
+}
+
+func (d *Decoder) DecodeUInt128() (value cadence.UInt128, err error) {
+	i, err := common_codec.DecodeBigInt(&d.r)
+	if err != nil {
+		return
+	}
+
+	return cadence.NewMeteredUInt128FromBig(
+		d.memoryGauge,
+		func() *big.Int {
+			return i
+		},
+	)
+}
+
+func (d *Decoder) DecodeUInt256() (value cadence.UInt256, err error) {
+	i, err := common_codec.DecodeBigInt(&d.r)
+	if err != nil {
+		return
+	}
+
+	return cadence.NewMeteredUInt256FromBig(
+		d.memoryGauge,
+		func() *big.Int {
+			return i
+		},
+	)
+}
+
+func (d *Decoder) DecodeWord8() (value cadence.Word8, err error) {
+	i, err := common_codec.DecodeNumber[uint8](&d.r)
+	if err != nil {
+		return
+	}
+	value = cadence.Word8(i)
+	return
+}
+
+func (d *Decoder) DecodeWord16() (value cadence.Word16, err error) {
+	i, err := common_codec.DecodeNumber[uint16](&d.r)
+	if err != nil {
+		return
+	}
+	value = cadence.Word16(i)
+	return
+}
+
+func (d *Decoder) DecodeWord32() (value cadence.Word32, err error) {
+	i, err := common_codec.DecodeNumber[uint32](&d.r)
+	if err != nil {
+		return
+	}
+	value = cadence.Word32(i)
+	return
+}
+
+func (d *Decoder) DecodeWord64() (value cadence.Word64, err error) {
+	i, err := common_codec.DecodeNumber[uint64](&d.r)
+	if err != nil {
+		return
+	}
+	value = cadence.Word64(i)
+	return
+}
+
+func (d *Decoder) DecodeFix64() (value cadence.Fix64, err error) {
+	i, err := common_codec.DecodeNumber[int64](&d.r)
+	if err != nil {
+		return
+	}
+	value = cadence.Fix64(i)
+	return
+}
+
+func (d *Decoder) DecodeUFix64() (value cadence.UFix64, err error) {
+	i, err := common_codec.DecodeNumber[uint64](&d.r)
+	if err != nil {
+		return
+	}
+	value = cadence.UFix64(i)
 	return
 }
 
@@ -354,6 +490,39 @@ func (d *Decoder) DecodeConstantArray(arrayType cadence.ConstantSizedArrayType) 
 	return
 }
 
+func (d *Decoder) DecodeDictionary() (dict cadence.Dictionary, err error) {
+	dictType, err := d.DecodeDictionaryType()
+	if err != nil {
+		return
+	}
+
+	size, err := d.DecodeLength()
+	if err != nil {
+		return
+	}
+
+	dict, err = cadence.NewMeteredDictionary(d.memoryGauge, size, func() (pairs []cadence.KeyValuePair, err error) {
+		pairs = make([]cadence.KeyValuePair, 0, size)
+		var key, value cadence.Value
+		for i := 0; i < size; i++ {
+			key, err = d.DecodeValue()
+			if err != nil {
+				return
+			}
+			value, err = d.DecodeValue()
+			if err != nil {
+				return
+			}
+			pairs = append(pairs, cadence.NewMeteredKeyValuePair(d.memoryGauge, key, value))
+		}
+		return
+	})
+
+	dict = dict.WithType(dictType)
+
+	return
+}
+
 //
 // Types
 //
@@ -364,6 +533,8 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 	switch typeIdentifer {
 	case EncodedTypeVoid:
 		t = cadence.NewMeteredVoidType(d.memoryGauge)
+	case EncodedTypeNever:
+		t = cadence.NewMeteredNeverType(d.memoryGauge)
 	case EncodedTypeOptional:
 		t, err = d.DecodeOptionalType()
 	case EncodedTypeBool:
@@ -376,6 +547,18 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t = cadence.NewMeteredBytesType(d.memoryGauge)
 	case EncodedTypeAddress:
 		t = cadence.NewMeteredAddressType(d.memoryGauge)
+	case EncodedTypeNumber:
+		t = cadence.NewMeteredNumberType(d.memoryGauge)
+	case EncodedTypeSignedNumber:
+		t = cadence.NewMeteredSignedNumberType(d.memoryGauge)
+	case EncodedTypeInteger:
+		t = cadence.NewMeteredIntegerType(d.memoryGauge)
+	case EncodedTypeSignedInteger:
+		t = cadence.NewMeteredSignedIntegerType(d.memoryGauge)
+	case EncodedTypeFixedPoint:
+		t = cadence.NewMeteredFixedPointType(d.memoryGauge)
+	case EncodedTypeSignedFixedPoint:
+		t = cadence.NewMeteredSignedFixedPointType(d.memoryGauge)
 	case EncodedTypeInt:
 		t = cadence.NewMeteredIntType(d.memoryGauge)
 	case EncodedTypeInt8:
@@ -386,6 +569,14 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t = cadence.NewMeteredInt32Type(d.memoryGauge)
 	case EncodedTypeInt64:
 		t = cadence.NewMeteredInt64Type(d.memoryGauge)
+	case EncodedTypeInt128:
+		t = cadence.NewMeteredInt128Type(d.memoryGauge)
+	case EncodedTypeInt256:
+		t = cadence.NewMeteredInt256Type(d.memoryGauge)
+	case EncodedTypeUInt128:
+		t = cadence.NewMeteredUInt128Type(d.memoryGauge)
+	case EncodedTypeUInt256:
+		t = cadence.NewMeteredUInt256Type(d.memoryGauge)
 	case EncodedTypeUInt:
 		t = cadence.NewMeteredUIntType(d.memoryGauge)
 	case EncodedTypeUInt8:
@@ -408,15 +599,19 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t = cadence.NewMeteredFix64Type(d.memoryGauge)
 	case EncodedTypeUFix64:
 		t = cadence.NewMeteredUFix64Type(d.memoryGauge)
-
 	case EncodedTypeVariableSizedArray:
 		t, err = d.DecodeVariableArrayType()
 	case EncodedTypeConstantSizedArray:
 		t, err = d.DecodeConstantArrayType()
+	case EncodedTypeDictionary:
+		t, err = d.DecodeDictionaryType()
+
 	case EncodedTypeAnyType:
 		t = cadence.NewMeteredAnyType(d.memoryGauge)
 	case EncodedTypeAnyStructType:
 		t = cadence.NewMeteredAnyStructType(d.memoryGauge)
+	case EncodedTypeAnyResourceType:
+		t = cadence.NewMeteredAnyResourceType(d.memoryGauge)
 	default:
 		err = fmt.Errorf("unknown type identifier: %d", typeIdentifer)
 	}
@@ -465,6 +660,19 @@ func (d *Decoder) DecodeConstantArrayType() (t cadence.ConstantSizedArrayType, e
 		return
 	}
 	t = cadence.NewMeteredConstantSizedArrayType(d.memoryGauge, uint(size), elementType)
+	return
+}
+
+func (d *Decoder) DecodeDictionaryType() (t cadence.DictionaryType, err error) {
+	keyType, err := d.DecodeType()
+	if err != nil {
+		return
+	}
+	elementType, err := d.DecodeType()
+	if err != nil {
+		return
+	}
+	t = cadence.NewMeteredDictionaryType(d.memoryGauge, keyType, elementType)
 	return
 }
 
