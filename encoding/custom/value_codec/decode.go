@@ -155,6 +155,12 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeDictionary()
 	case EncodedValueStruct:
 		value, err = d.DecodeStruct()
+	case EncodedValueResource:
+		value, err = d.DecodeResource()
+	case EncodedValueEvent:
+		value, err = d.DecodeEvent()
+	case EncodedValueContract:
+		value, err = d.DecodeContract()
 
 	default:
 		err = fmt.Errorf("unknown cadence.Value: %s", value)
@@ -541,6 +547,57 @@ func (d *Decoder) DecodeStruct() (s cadence.Struct, err error) {
 	return
 }
 
+func (d *Decoder) DecodeResource() (s cadence.Resource, err error) {
+	resourceType, err := d.DecodeResourceType()
+	if err != nil {
+		return
+	}
+
+	fields, err := DecodeArray(d, func() (cadence.Value, error) {
+		return d.DecodeValue()
+	})
+	if err != nil {
+		return
+	}
+
+	s = cadence.NewResource(fields).WithType(resourceType)
+	return
+}
+
+func (d *Decoder) DecodeEvent() (s cadence.Event, err error) {
+	eventType, err := d.DecodeEventType()
+	if err != nil {
+		return
+	}
+
+	fields, err := DecodeArray(d, func() (cadence.Value, error) {
+		return d.DecodeValue()
+	})
+	if err != nil {
+		return
+	}
+
+	s = cadence.NewEvent(fields).WithType(eventType)
+	return
+}
+
+func (d *Decoder) DecodeContract() (s cadence.Contract, err error) {
+	contractType, err := d.DecodeContractType()
+	if err != nil {
+		return
+	}
+
+	fields, err := DecodeArray(d, func() (cadence.Value, error) {
+		return d.DecodeValue()
+	})
+	if err != nil {
+		return
+	}
+
+	s = cadence.NewContract(fields).WithType(contractType)
+	return
+}
+
 //
 // Types
 //
@@ -625,6 +682,12 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t, err = d.DecodeDictionaryType()
 	case EncodedTypeStruct:
 		t, err = d.DecodeStructType()
+	case EncodedTypeResource:
+		t, err = d.DecodeResourceType()
+	case EncodedTypeEvent:
+		t, err = d.DecodeEventType()
+	case EncodedTypeContract:
+		t, err = d.DecodeContractType()
 
 	case EncodedTypeAnyType:
 		t = cadence.NewMeteredAnyType(d.memoryGauge)
@@ -721,6 +784,88 @@ func (d *Decoder) DecodeStructType() (t *cadence.StructType, err error) {
 	})
 
 	t = cadence.NewMeteredStructType(d.memoryGauge, location, qualifiedIdentifier, fields, initializers)
+	return
+}
+
+func (d *Decoder) DecodeResourceType() (t *cadence.ResourceType, err error) {
+	location, err := common_codec.DecodeLocation(&d.r, d.memoryGauge)
+	if err != nil {
+		return
+	}
+
+	qualifiedIdentifier, err := common_codec.DecodeString(&d.r)
+	if err != nil {
+		return
+	}
+
+	fields, err := DecodeArray(d, func() (field cadence.Field, err error) {
+		return d.DecodeField()
+	})
+	if err != nil {
+		return
+	}
+
+	initializers, err := DecodeArray(d, func() ([]cadence.Parameter, error) {
+		return DecodeArray(d, func() (cadence.Parameter, error) {
+			return d.DecodeParameter()
+		})
+	})
+
+	t = cadence.NewMeteredResourceType(d.memoryGauge, location, qualifiedIdentifier, fields, initializers)
+	return
+}
+
+func (d *Decoder) DecodeEventType() (t *cadence.EventType, err error) {
+	location, err := common_codec.DecodeLocation(&d.r, d.memoryGauge)
+	if err != nil {
+		return
+	}
+
+	qualifiedIdentifier, err := common_codec.DecodeString(&d.r)
+	if err != nil {
+		return
+	}
+
+	fields, err := DecodeArray(d, func() (field cadence.Field, err error) {
+		return d.DecodeField()
+	})
+	if err != nil {
+		return
+	}
+
+	initializers, err := DecodeArray(d, func() (cadence.Parameter, error) {
+		return d.DecodeParameter()
+	})
+
+	t = cadence.NewMeteredEventType(d.memoryGauge, location, qualifiedIdentifier, fields, initializers)
+	return
+}
+
+func (d *Decoder) DecodeContractType() (t *cadence.ContractType, err error) {
+	location, err := common_codec.DecodeLocation(&d.r, d.memoryGauge)
+	if err != nil {
+		return
+	}
+
+	qualifiedIdentifier, err := common_codec.DecodeString(&d.r)
+	if err != nil {
+		return
+	}
+
+	fields, err := DecodeArray(d, func() (field cadence.Field, err error) {
+		return d.DecodeField()
+	})
+	if err != nil {
+		return
+	}
+
+	initializers, err := DecodeArray(d, func() ([]cadence.Parameter, error) {
+		return DecodeArray(d, func() (cadence.Parameter, error) {
+			return d.DecodeParameter()
+		})
+	})
+
+	t = cadence.NewMeteredContractType(d.memoryGauge, location, qualifiedIdentifier, fields, initializers)
 	return
 }
 

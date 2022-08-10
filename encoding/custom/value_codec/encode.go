@@ -272,6 +272,24 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 			return
 		}
 		return e.EncodeStruct(v)
+	case cadence.Resource:
+		err = e.EncodeValueIdentifier(EncodedValueResource)
+		if err != nil {
+			return
+		}
+		return e.EncodeResource(v)
+	case cadence.Event:
+		err = e.EncodeValueIdentifier(EncodedValueEvent)
+		if err != nil {
+			return
+		}
+		return e.EncodeEvent(v)
+	case cadence.Contract:
+		err = e.EncodeValueIdentifier(EncodedValueContract)
+		if err != nil {
+			return
+		}
+		return e.EncodeContract(v)
 	}
 
 	return fmt.Errorf("unexpected value: ${value}")
@@ -343,6 +361,36 @@ func (e *Encoder) EncodeStruct(value cadence.Struct) (err error) {
 		return
 	}
 
+	return EncodeArray(e, value.Fields, func(field cadence.Value) (err error) {
+		return e.EncodeValue(field)
+	})
+}
+
+func (e *Encoder) EncodeResource(value cadence.Resource) (err error) {
+	err = e.EncodeResourceType(value.ResourceType)
+	if err != nil {
+		return
+	}
+	return EncodeArray(e, value.Fields, func(field cadence.Value) (err error) {
+		return e.EncodeValue(field)
+	})
+}
+
+func (e *Encoder) EncodeEvent(value cadence.Event) (err error) {
+	err = e.EncodeEventType(value.EventType)
+	if err != nil {
+		return
+	}
+	return EncodeArray(e, value.Fields, func(field cadence.Value) (err error) {
+		return e.EncodeValue(field)
+	})
+}
+
+func (e *Encoder) EncodeContract(value cadence.Contract) (err error) {
+	err = e.EncodeContractType(value.ContractType)
+	if err != nil {
+		return
+	}
 	return EncodeArray(e, value.Fields, func(field cadence.Value) (err error) {
 		return e.EncodeValue(field)
 	})
@@ -440,6 +488,24 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 			return
 		}
 		return e.EncodeStructType(actualType)
+	case *cadence.ResourceType:
+		err = e.EncodeTypeIdentifier(EncodedTypeResource)
+		if err != nil {
+			return
+		}
+		return e.EncodeResourceType(actualType)
+	case *cadence.EventType:
+		err = e.EncodeTypeIdentifier(EncodedTypeEvent)
+		if err != nil {
+			return
+		}
+		return e.EncodeEventType(actualType)
+	case *cadence.ContractType:
+		err = e.EncodeTypeIdentifier(EncodedTypeContract)
+		if err != nil {
+			return
+		}
+		return e.EncodeContractType(actualType)
 
 	case cadence.NeverType:
 		return e.EncodeTypeIdentifier(EncodedTypeNever)
@@ -492,6 +558,70 @@ func (e *Encoder) EncodeDictionaryType(t cadence.DictionaryType) (err error) {
 }
 
 func (e *Encoder) EncodeStructType(t *cadence.StructType) (err error) {
+	err = common_codec.EncodeLocation(&e.w, t.Location)
+	if err != nil {
+		return
+	}
+
+	err = common_codec.EncodeString(&e.w, t.QualifiedIdentifier)
+	if err != nil {
+		return
+	}
+
+	err = EncodeArray(e, t.Fields, func(field cadence.Field) (err error) {
+		return e.EncodeField(field)
+	})
+
+	return EncodeArray(e, t.Initializers, func(parameters []cadence.Parameter) (err error) {
+		return EncodeArray(e, parameters, func(parameter cadence.Parameter) (err error) {
+			return e.EncodeParameter(parameter)
+		})
+	})
+}
+
+func (e *Encoder) EncodeResourceType(t *cadence.ResourceType) (err error) {
+	err = common_codec.EncodeLocation(&e.w, t.Location)
+	if err != nil {
+		return
+	}
+
+	err = common_codec.EncodeString(&e.w, t.QualifiedIdentifier)
+	if err != nil {
+		return
+	}
+
+	err = EncodeArray(e, t.Fields, func(field cadence.Field) (err error) {
+		return e.EncodeField(field)
+	})
+
+	return EncodeArray(e, t.Initializers, func(parameters []cadence.Parameter) (err error) {
+		return EncodeArray(e, parameters, func(parameter cadence.Parameter) (err error) {
+			return e.EncodeParameter(parameter)
+		})
+	})
+}
+
+func (e *Encoder) EncodeEventType(t *cadence.EventType) (err error) {
+	err = common_codec.EncodeLocation(&e.w, t.Location)
+	if err != nil {
+		return
+	}
+
+	err = common_codec.EncodeString(&e.w, t.QualifiedIdentifier)
+	if err != nil {
+		return
+	}
+
+	err = EncodeArray(e, t.Fields, func(field cadence.Field) (err error) {
+		return e.EncodeField(field)
+	})
+
+	return EncodeArray(e, t.Initializer, func(parameter cadence.Parameter) (err error) {
+		return e.EncodeParameter(parameter)
+	})
+}
+
+func (e *Encoder) EncodeContractType(t *cadence.ContractType) (err error) {
 	err = common_codec.EncodeLocation(&e.w, t.Location)
 	if err != nil {
 		return
