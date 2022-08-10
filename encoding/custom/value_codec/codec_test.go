@@ -2664,6 +2664,26 @@ func TestValueCodecAbstractTypes(t *testing.T) {
 		assert.Equal(t, typ, output, "decoded type differs")
 	})
 
+	t.Run("Path", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewPathType()
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			[]byte{byte(value_codec.EncodedTypePath)},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
 }
 
 func NewTestCodec() (encoder *value_codec.Encoder, decoder *value_codec.Decoder, buffer *bytes.Buffer) {
