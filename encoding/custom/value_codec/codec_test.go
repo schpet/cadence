@@ -2348,6 +2348,41 @@ func TestValueCodecContract(t *testing.T) {
 	})
 }
 
+func TestValueCodecLink(t *testing.T) {
+	t.Parallel()
+
+	t.Run("value", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		targetPath := cadence.NewPath("domi", "le nom")
+		borrowType := "borrow'd"
+		value := cadence.NewLink(targetPath, borrowType)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueLink)},
+				[]byte{0, 0, 0, byte(len(targetPath.Domain))},
+				[]byte(targetPath.Domain),
+				[]byte{0, 0, 0, byte(len(targetPath.Identifier))},
+				[]byte(targetPath.Identifier),
+				[]byte{0, 0, 0, byte(len(borrowType))},
+				[]byte(borrowType),
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+}
+
 func TestValueCodecAbstractTypes(t *testing.T) {
 	t.Parallel()
 

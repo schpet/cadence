@@ -161,6 +161,8 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeEvent()
 	case EncodedValueContract:
 		value, err = d.DecodeContract()
+	case EncodedValueLink:
+		value, err = d.DecodeLink()
 
 	default:
 		err = fmt.Errorf("unknown cadence.Value: %s", value)
@@ -595,6 +597,28 @@ func (d *Decoder) DecodeContract() (s cadence.Contract, err error) {
 	}
 
 	s = cadence.NewContract(fields).WithType(contractType)
+	return
+}
+
+func (d *Decoder) DecodeLink() (link cadence.Link, err error) {
+	domain, err := d.DecodeString()
+	if err != nil {
+		return
+	}
+
+	identifier, err := d.DecodeString()
+	if err != nil {
+		return
+	}
+
+	borrowType, err := d.DecodeString()
+	if err != nil {
+		return
+	}
+
+	path := cadence.NewMeteredPath(d.memoryGauge, string(domain), string(identifier))
+
+	link = cadence.NewMeteredLink(d.memoryGauge, path, string(borrowType))
 	return
 }
 

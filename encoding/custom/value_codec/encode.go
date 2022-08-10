@@ -290,6 +290,12 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 			return
 		}
 		return e.EncodeContract(v)
+	case cadence.Link:
+		err = e.EncodeValueIdentifier(EncodedValueLink)
+		if err != nil {
+			return
+		}
+		return e.EncodeLink(v)
 	}
 
 	return fmt.Errorf("unexpected value: ${value}")
@@ -394,6 +400,20 @@ func (e *Encoder) EncodeContract(value cadence.Contract) (err error) {
 	return EncodeArray(e, value.Fields, func(field cadence.Value) (err error) {
 		return e.EncodeValue(field)
 	})
+}
+
+func (e *Encoder) EncodeLink(value cadence.Link) (err error) {
+	err = common_codec.EncodeString(&e.w, value.TargetPath.Domain)
+	if err != nil {
+		return
+	}
+
+	err = common_codec.EncodeString(&e.w, value.TargetPath.Identifier)
+	if err != nil {
+		return
+	}
+
+	return common_codec.EncodeString(&e.w, value.BorrowType)
 }
 
 //
