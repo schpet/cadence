@@ -165,6 +165,8 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeLink()
 	case EncodedValuePath:
 		value, err = d.DecodePath()
+	case EncodedValueCapability:
+		value, err = d.DecodeCapability()
 
 	default:
 		err = fmt.Errorf("unknown cadence.Value: %s", value)
@@ -632,6 +634,26 @@ func (d *Decoder) DecodePath() (path cadence.Path, err error) {
 	return
 }
 
+func (d *Decoder) DecodeCapability() (capability cadence.Capability, err error) {
+	path, err := d.DecodePath()
+	if err != nil {
+		return
+	}
+
+	address, err := d.DecodeAddress()
+	if err != nil {
+		return
+	}
+
+	borrowType, err := d.DecodeType()
+	if err != nil {
+		return
+	}
+
+	capability = cadence.NewMeteredCapability(d.memoryGauge, path, address, borrowType)
+	return
+}
+
 //
 // Types
 //
@@ -730,6 +752,13 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t = cadence.NewMeteredPublicPathType(d.memoryGauge)
 	case EncodedTypePrivatePath:
 		t = cadence.NewMeteredPrivatePathType(d.memoryGauge)
+	case EncodedTypeCapability:
+		var borrowType cadence.Type
+		borrowType, err = d.DecodeType()
+		if err != nil {
+			return
+		}
+		t = cadence.NewMeteredCapabilityType(d.memoryGauge, borrowType)
 
 	case EncodedTypeAnyType:
 		t = cadence.NewMeteredAnyType(d.memoryGauge)

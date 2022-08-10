@@ -2514,6 +2514,69 @@ func TestValueCodecPath(t *testing.T) {
 	})
 }
 
+func TestValueCodecCapability(t *testing.T) {
+	t.Parallel()
+
+	t.Run("value", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		path := cadence.NewPath("demesne", "pointer")
+		address := cadence.NewAddress([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		borrowType := cadence.NewIntType()
+
+		value := cadence.NewCapability(path, address, borrowType)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueCapability)},
+				[]byte{0, 0, 0, byte(len(path.Domain))},
+				[]byte(path.Domain),
+				[]byte{0, 0, 0, byte(len(path.Identifier))},
+				[]byte(path.Identifier),
+				address.Bytes(),
+				[]byte{byte(value_codec.EncodedTypeInt)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewCapabilityType(cadence.NewAddressType())
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedTypeCapability)},
+				[]byte{byte(value_codec.EncodedTypeAddress)},
+			),
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+}
+
 func TestValueCodecAbstractTypes(t *testing.T) {
 	t.Parallel()
 
