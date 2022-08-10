@@ -121,6 +121,7 @@ const (
 	EncodedTypeAnyType
 	EncodedTypeAnyStructType
 	EncodedTypeAnyResourceType
+	EncodedTypePath
 
 	EncodedTypeComposite // TODO is this necessary?
 	EncodedTypeInterface // TODO is this necessary?

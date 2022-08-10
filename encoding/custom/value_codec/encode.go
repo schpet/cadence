@@ -296,6 +296,12 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 			return
 		}
 		return e.EncodeLink(v)
+	case cadence.Path:
+		err = e.EncodeValueIdentifier(EncodedValuePath)
+		if err != nil {
+			return
+		}
+		return e.EncodePath(v)
 	}
 
 	return fmt.Errorf("unexpected value: ${value}")
@@ -403,17 +409,21 @@ func (e *Encoder) EncodeContract(value cadence.Contract) (err error) {
 }
 
 func (e *Encoder) EncodeLink(value cadence.Link) (err error) {
-	err = common_codec.EncodeString(&e.w, value.TargetPath.Domain)
-	if err != nil {
-		return
-	}
-
-	err = common_codec.EncodeString(&e.w, value.TargetPath.Identifier)
+	err = e.EncodePath(value.TargetPath)
 	if err != nil {
 		return
 	}
 
 	return common_codec.EncodeString(&e.w, value.BorrowType)
+}
+
+func (e *Encoder) EncodePath(value cadence.Path) (err error) {
+	err = common_codec.EncodeString(&e.w, value.Domain)
+	if err != nil {
+		return
+	}
+
+	return common_codec.EncodeString(&e.w, value.Identifier)
 }
 
 //
@@ -526,6 +536,14 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 			return
 		}
 		return e.EncodeContractType(actualType)
+	case cadence.CapabilityPathType:
+		return e.EncodeTypeIdentifier(EncodedTypeCapabilityPath)
+	case cadence.StoragePathType:
+		return e.EncodeTypeIdentifier(EncodedTypeStoragePath)
+	case cadence.PublicPathType:
+		return e.EncodeTypeIdentifier(EncodedTypePublicPath)
+	case cadence.PrivatePathType:
+		return e.EncodeTypeIdentifier(EncodedTypePrivatePath)
 
 	case cadence.NeverType:
 		return e.EncodeTypeIdentifier(EncodedTypeNever)

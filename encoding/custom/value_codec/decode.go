@@ -163,6 +163,8 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeContract()
 	case EncodedValueLink:
 		value, err = d.DecodeLink()
+	case EncodedValuePath:
+		value, err = d.DecodePath()
 
 	default:
 		err = fmt.Errorf("unknown cadence.Value: %s", value)
@@ -601,6 +603,21 @@ func (d *Decoder) DecodeContract() (s cadence.Contract, err error) {
 }
 
 func (d *Decoder) DecodeLink() (link cadence.Link, err error) {
+	path, err := d.DecodePath()
+	if err != nil {
+		return
+	}
+
+	borrowType, err := d.DecodeString()
+	if err != nil {
+		return
+	}
+
+	link = cadence.NewMeteredLink(d.memoryGauge, path, string(borrowType))
+	return
+}
+
+func (d *Decoder) DecodePath() (path cadence.Path, err error) {
 	domain, err := d.DecodeString()
 	if err != nil {
 		return
@@ -611,14 +628,7 @@ func (d *Decoder) DecodeLink() (link cadence.Link, err error) {
 		return
 	}
 
-	borrowType, err := d.DecodeString()
-	if err != nil {
-		return
-	}
-
-	path := cadence.NewMeteredPath(d.memoryGauge, string(domain), string(identifier))
-
-	link = cadence.NewMeteredLink(d.memoryGauge, path, string(borrowType))
+	path = cadence.NewMeteredPath(d.memoryGauge, string(domain), string(identifier))
 	return
 }
 
@@ -712,6 +722,14 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t, err = d.DecodeEventType()
 	case EncodedTypeContract:
 		t, err = d.DecodeContractType()
+	case EncodedTypeCapabilityPath:
+		t = cadence.NewMeteredCapabilityPathType(d.memoryGauge)
+	case EncodedTypeStoragePath:
+		t = cadence.NewMeteredStoragePathType(d.memoryGauge)
+	case EncodedTypePublicPath:
+		t = cadence.NewMeteredPublicPathType(d.memoryGauge)
+	case EncodedTypePrivatePath:
+		t = cadence.NewMeteredPrivatePathType(d.memoryGauge)
 
 	case EncodedTypeAnyType:
 		t = cadence.NewMeteredAnyType(d.memoryGauge)
