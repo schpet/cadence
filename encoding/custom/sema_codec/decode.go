@@ -275,7 +275,7 @@ func (d *SemaDecoder) DecodeIntPointer() (ptr *int, err error) {
 		return
 	}
 
-	i64, err := common_codec.DecodeNumber(&d.r)
+	i64, err := common_codec.DecodeNumber[int64](&d.r)
 	if err != nil {
 		return
 	}
@@ -310,7 +310,7 @@ func (d *SemaDecoder) DecodeConstantSizedType() (a *sema.ConstantSizedType, err 
 		return
 	}
 
-	size, err := common_codec.DecodeNumber(&d.r)
+	size, err := common_codec.DecodeNumber[int64](&d.r)
 	if err != nil {
 		return
 	}
@@ -488,7 +488,7 @@ func (d *SemaDecoder) DecodeCompositeType() (t *sema.CompositeType, err error) {
 
 	d.typeDefs[d.r.Location()] = t
 
-	t.Location, err = d.DecodeLocation()
+	t.Location, err = common_codec.DecodeLocation(&d.r, d.memoryGauge)
 	if err != nil {
 		return
 	}
@@ -566,7 +566,7 @@ func (d *SemaDecoder) DecodeInterfaceType() (t *sema.InterfaceType, err error) {
 
 	d.typeDefs[d.r.Location()] = t
 
-	t.Location, err = d.DecodeLocation()
+	t.Location, err = common_codec.DecodeLocation(&d.r, d.memoryGauge)
 	if err != nil {
 		return
 	}
@@ -727,7 +727,7 @@ func (d *SemaDecoder) DecodeStringTypeOrderedMap() (om *sema.StringTypeOrderedMa
 }
 
 func (d *SemaDecoder) DecodeMember(containerType sema.Type) (member *sema.Member, err error) {
-	access, err := common_codec.DecodeNumber(&d.r)
+	access, err := common_codec.DecodeNumber[uint64](&d.r)
 	if err != nil {
 		return
 	}
@@ -742,12 +742,12 @@ func (d *SemaDecoder) DecodeMember(containerType sema.Type) (member *sema.Member
 		return
 	}
 
-	declarationKind, err := common_codec.DecodeNumber(&d.r)
+	declarationKind, err := common_codec.DecodeNumber[uint64](&d.r)
 	if err != nil {
 		return
 	}
 
-	variableKind, err := common_codec.DecodeNumber(&d.r)
+	variableKind, err := common_codec.DecodeNumber[uint64](&d.r)
 	if err != nil {
 		return
 	}
@@ -803,17 +803,17 @@ func (d *SemaDecoder) DecodeAstIdentifier() (id ast.Identifier, err error) {
 }
 
 func (d *SemaDecoder) DecodeAstPosition() (pos ast.Position, err error) {
-	offset, err := common_codec.DecodeNumber(&d.r)
+	offset, err := common_codec.DecodeNumber[int64](&d.r)
 	if err != nil {
 		return
 	}
 
-	line, err := common_codec.DecodeNumber(&d.r)
+	line, err := common_codec.DecodeNumber[int64](&d.r)
 	if err != nil {
 		return
 	}
 
-	column, err := common_codec.DecodeNumber(&d.r)
+	column, err := common_codec.DecodeNumber[int64](&d.r)
 	if err != nil {
 		return
 	}
@@ -846,92 +846,6 @@ func (d *SemaDecoder) DecodeTypeAnnotation() (anno *sema.TypeAnnotation, err err
 		IsResource: isResource,
 		Type:       t,
 	}
-	return
-}
-
-func (d *SemaDecoder) DecodeLocation() (location common.Location, err error) {
-	prefix, err := d.DecodeLocationPrefix()
-
-	switch prefix {
-	case common.AddressLocationPrefix:
-		return d.DecodeAddressLocation()
-	case common.IdentifierLocationPrefix:
-		return d.DecodeIdentifierLocation()
-	case common.ScriptLocationPrefix:
-		return d.DecodeScriptLocation()
-	case common.StringLocationPrefix:
-		return d.DecodeStringLocation()
-	case common.TransactionLocationPrefix:
-		return d.DecodeTransactionLocation()
-	case string(common.REPLLocationPrefix[0]):
-		location = common.REPLLocation{}
-	case NilLocationPrefix:
-		return
-
-	// TODO more locations
-	default:
-		err = fmt.Errorf("unknown location prefix: %s", prefix)
-	}
-	return
-}
-
-func (d *SemaDecoder) DecodeLocationPrefix() (prefix string, err error) {
-	b, err := d.read(1)
-	prefix = string(b)
-	return
-}
-
-func (d *SemaDecoder) DecodeAddressLocation() (location common.AddressLocation, err error) {
-	address, err := common_codec.DecodeAddress(&d.r)
-	if err != nil {
-		return
-	}
-
-	name, err := common_codec.DecodeString(&d.r)
-	if err != nil {
-		return
-	}
-
-	location = common.NewAddressLocation(d.memoryGauge, address, name)
-
-	return
-}
-
-func (d *SemaDecoder) DecodeIdentifierLocation() (location common.IdentifierLocation, err error) {
-	s, err := common_codec.DecodeString(&d.r)
-	location = common.IdentifierLocation(s)
-	return
-}
-
-func (d *SemaDecoder) DecodeScriptLocation() (location common.ScriptLocation, err error) {
-	byteArray, err := d.read(len(location))
-	if err != nil {
-		return
-	}
-
-	for i, b := range byteArray {
-		location[i] = b
-	}
-
-	return
-}
-
-func (d *SemaDecoder) DecodeStringLocation() (location common.StringLocation, err error) {
-	s, err := common_codec.DecodeString(&d.r)
-	location = common.StringLocation(s)
-	return
-}
-
-func (d *SemaDecoder) DecodeTransactionLocation() (location common.TransactionLocation, err error) {
-	byteArray, err := d.read(len(location))
-	if err != nil {
-		return
-	}
-
-	for i, b := range byteArray {
-		location[i] = b
-	}
-
 	return
 }
 

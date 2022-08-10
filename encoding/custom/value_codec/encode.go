@@ -266,6 +266,12 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 			return
 		}
 		return e.EncodeDictionary(v)
+	case cadence.Struct:
+		err = e.EncodeValueIdentifier(EncodedValueStruct)
+		if err != nil {
+			return
+		}
+		return e.EncodeStruct(v)
 	}
 
 	return fmt.Errorf("unexpected value: ${value}")
@@ -329,6 +335,17 @@ func (e *Encoder) EncodeDictionary(value cadence.Dictionary) (err error) {
 		}
 	}
 	return
+}
+
+func (e *Encoder) EncodeStruct(value cadence.Struct) (err error) {
+	err = e.EncodeStructType(value.StructType)
+	if err != nil {
+		return
+	}
+
+	return EncodeArray(e, value.Fields, func(field cadence.Value) (err error) {
+		return e.EncodeValue(field)
+	})
 }
 
 //
@@ -417,6 +434,12 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 			return
 		}
 		return e.EncodeDictionaryType(actualType)
+	case *cadence.StructType:
+		err = e.EncodeTypeIdentifier(EncodedTypeStruct)
+		if err != nil {
+			return
+		}
+		return e.EncodeStructType(actualType)
 
 	case cadence.NeverType:
 		return e.EncodeTypeIdentifier(EncodedTypeNever)
@@ -468,11 +491,104 @@ func (e *Encoder) EncodeDictionaryType(t cadence.DictionaryType) (err error) {
 	return e.EncodeType(t.ElementType)
 }
 
+func (e *Encoder) EncodeStructType(t *cadence.StructType) (err error) {
+	err = common_codec.EncodeLocation(&e.w, t.Location)
+	if err != nil {
+		return
+	}
+
+	err = common_codec.EncodeString(&e.w, t.QualifiedIdentifier)
+	if err != nil {
+		return
+	}
+
+	err = EncodeArray(e, t.Fields, func(field cadence.Field) (err error) {
+		return e.EncodeField(field)
+	})
+
+	return EncodeArray(e, t.Initializers, func(parameters []cadence.Parameter) (err error) {
+		return EncodeArray(e, parameters, func(parameter cadence.Parameter) (err error) {
+			return e.EncodeParameter(parameter)
+		})
+	})
+}
+
+func (e *Encoder) EncodeField(field cadence.Field) (err error) {
+	err = common_codec.EncodeString(&e.w, field.Identifier)
+	if err != nil {
+		return
+	}
+
+	return e.EncodeType(field.Type)
+}
+
+func (e *Encoder) EncodeParameter(parameter cadence.Parameter) (err error) {
+	err = common_codec.EncodeString(&e.w, parameter.Label)
+	if err != nil {
+		return
+	}
+
+	err = common_codec.EncodeString(&e.w, parameter.Identifier)
+	if err != nil {
+		return
+	}
+
+	return e.EncodeType(parameter.Type)
+}
+
 //
 // Other
 //
 
 func (e *Encoder) write(b []byte) (err error) {
 	_, err = e.w.Write(b)
+	return
+}
+
+func EncodeArray[T any](e *Encoder, arr []T, encodeFn func(T) error) (err error) {
+	// TODO save a bit in the array length for nil check?
+	err = common_codec.EncodeBool(&e.w, arr == nil)
+	if arr == nil || err != nil {
+		return
+	}
+
+	err = common_codec.EncodeLength(&e.w, len(arr))
+	if err != nil {
+		return
+	}
+
+	for _, element := range arr {
+		// TODO does this need to include pointer logic for recursive types in arrays to be handled correctly?
+		err = encodeFn(element)
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func DecodeArray[T any](d *Decoder, decodeFn func() (T, error)) (arr []T, err error) {
+	isNil, err := common_codec.DecodeBool(&d.r)
+	if isNil || err != nil {
+		return
+	}
+
+	length, err := common_codec.DecodeLength(&d.r)
+	if err != nil {
+		return
+	}
+
+	arr = make([]T, length)
+	for i := 0; i < length; i++ {
+		var element T
+		element, err = decodeFn()
+		if err != nil {
+			return
+		}
+
+		arr[i] = element
+	}
+
 	return
 }

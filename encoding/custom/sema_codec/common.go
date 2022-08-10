@@ -84,5 +84,3 @@ const (
 	EncodedSemaCapabilityType
 	EncodedSemaPointerType
 )
-
-var NilLocationPrefix = "\x00"

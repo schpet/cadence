@@ -483,7 +483,7 @@ func (e *SemaEncoder) EncodePointer(bufferOffset int) (err error) {
 // TODO if IsImportable is false then do we want to skip for execution state storage?
 func (e *SemaEncoder) EncodeCompositeType(compositeType *sema.CompositeType) (err error) {
 	// Location -> common.Location
-	err = e.EncodeLocation(compositeType.Location)
+	err = common_codec.EncodeLocation(&e.w, compositeType.Location)
 	if err != nil {
 		return
 	}
@@ -753,7 +753,7 @@ func (e *SemaEncoder) EncodeAstPosition(pos ast.Position) (err error) {
 }
 
 func (e *SemaEncoder) EncodeInterfaceType(interfaceType *sema.InterfaceType) (err error) {
-	err = e.EncodeLocation(interfaceType.Location)
+	err = common_codec.EncodeLocation(&e.w, interfaceType.Location)
 	if err != nil {
 		return
 	}
@@ -792,94 +792,6 @@ func (e *SemaEncoder) EncodeInterfaceType(interfaceType *sema.InterfaceType) (er
 
 	// TODO can I drop nested types if I encode built-in composite types as enums?
 	return e.EncodeStringTypeOrderedMap(interfaceType.GetNestedTypes())
-}
-
-func (e *SemaEncoder) EncodeLocation(location common.Location) (err error) {
-	switch concreteType := location.(type) {
-	case common.AddressLocation:
-		return e.EncodeAddressLocation(concreteType)
-	case common.IdentifierLocation:
-		return e.EncodeIdentifierLocation(concreteType)
-	case common.ScriptLocation:
-		return e.EncodeScriptLocation(concreteType)
-	case common.StringLocation:
-		return e.EncodeStringLocation(concreteType)
-	case common.TransactionLocation:
-		return e.EncodeTransactionLocation(concreteType)
-	case common.REPLLocation:
-		return e.EncodeREPLLocation()
-	case nil:
-		return e.EncodeNilLocation()
-	default:
-		return fmt.Errorf("unexpected location type: %s", concreteType)
-	}
-}
-
-// The location prefixes are stored as strings but are always* a single ascii character,
-// so they can be stored in a single byte.
-// * The exception is the REPL location but its first ascii character is unique anyway.
-func (e *SemaEncoder) EncodeLocationPrefix(prefix string) (err error) {
-	char := prefix[0]
-	return e.write([]byte{char})
-}
-
-// EncodeNilLocation encodes a value that indicates that no location is specified
-func (e *SemaEncoder) EncodeNilLocation() (err error) {
-	return e.EncodeLocationPrefix(NilLocationPrefix)
-}
-
-func (e *SemaEncoder) EncodeAddressLocation(t common.AddressLocation) (err error) {
-	err = e.EncodeLocationPrefix(common.AddressLocationPrefix)
-	if err != nil {
-		return
-	}
-
-	err = common_codec.EncodeAddress(&e.w, t.Address)
-	if err != nil {
-		return
-	}
-
-	return common_codec.EncodeString(&e.w, t.Name)
-}
-
-func (e *SemaEncoder) EncodeIdentifierLocation(t common.IdentifierLocation) (err error) {
-	err = e.EncodeLocationPrefix(common.IdentifierLocationPrefix)
-	if err != nil {
-		return
-	}
-
-	return common_codec.EncodeString(&e.w, string(t))
-}
-
-func (e *SemaEncoder) EncodeScriptLocation(t common.ScriptLocation) (err error) {
-	err = e.EncodeLocationPrefix(common.ScriptLocationPrefix)
-	if err != nil {
-		return
-	}
-
-	return e.write(t[:])
-}
-
-func (e *SemaEncoder) EncodeStringLocation(t common.StringLocation) (err error) {
-	err = e.EncodeLocationPrefix(common.StringLocationPrefix)
-	if err != nil {
-		return
-	}
-
-	return common_codec.EncodeString(&e.w, string(t))
-}
-
-func (e *SemaEncoder) EncodeTransactionLocation(t common.TransactionLocation) (err error) {
-	err = e.EncodeLocationPrefix(common.TransactionLocationPrefix)
-	if err != nil {
-		return
-	}
-
-	return e.write(t[:])
-}
-
-func (e *SemaEncoder) EncodeREPLLocation() (err error) {
-	return e.EncodeLocationPrefix(common.REPLLocationPrefix)
 }
 
 func (e *SemaEncoder) write(b []byte) (err error) {

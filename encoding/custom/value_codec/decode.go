@@ -137,7 +137,6 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeFix64()
 	case EncodedValueUFix64:
 		value, err = d.DecodeUFix64()
-
 	case EncodedValueVariableArray:
 		var t cadence.VariableSizedArrayType
 		t, err = d.DecodeVariableArrayType()
@@ -154,6 +153,8 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodeConstantArray(t)
 	case EncodedValueDictionary:
 		value, err = d.DecodeDictionary()
+	case EncodedValueStruct:
+		value, err = d.DecodeStruct()
 
 	default:
 		err = fmt.Errorf("unknown cadence.Value: %s", value)
@@ -523,6 +524,23 @@ func (d *Decoder) DecodeDictionary() (dict cadence.Dictionary, err error) {
 	return
 }
 
+func (d *Decoder) DecodeStruct() (s cadence.Struct, err error) {
+	structType, err := d.DecodeStructType()
+	if err != nil {
+		return
+	}
+
+	fields, err := DecodeArray(d, func() (cadence.Value, error) {
+		return d.DecodeValue()
+	})
+	if err != nil {
+		return
+	}
+
+	s = cadence.NewStruct(fields).WithType(structType)
+	return
+}
+
 //
 // Types
 //
@@ -605,6 +623,8 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t, err = d.DecodeConstantArrayType()
 	case EncodedTypeDictionary:
 		t, err = d.DecodeDictionaryType()
+	case EncodedTypeStruct:
+		t, err = d.DecodeStructType()
 
 	case EncodedTypeAnyType:
 		t = cadence.NewMeteredAnyType(d.memoryGauge)
@@ -673,6 +693,61 @@ func (d *Decoder) DecodeDictionaryType() (t cadence.DictionaryType, err error) {
 		return
 	}
 	t = cadence.NewMeteredDictionaryType(d.memoryGauge, keyType, elementType)
+	return
+}
+
+func (d *Decoder) DecodeStructType() (t *cadence.StructType, err error) {
+	location, err := common_codec.DecodeLocation(&d.r, d.memoryGauge)
+	if err != nil {
+		return
+	}
+
+	qualifiedIdentifier, err := common_codec.DecodeString(&d.r)
+	if err != nil {
+		return
+	}
+
+	fields, err := DecodeArray(d, func() (field cadence.Field, err error) {
+		return d.DecodeField()
+	})
+	if err != nil {
+		return
+	}
+
+	initializers, err := DecodeArray(d, func() ([]cadence.Parameter, error) {
+		return DecodeArray(d, func() (cadence.Parameter, error) {
+			return d.DecodeParameter()
+		})
+	})
+
+	t = cadence.NewMeteredStructType(d.memoryGauge, location, qualifiedIdentifier, fields, initializers)
+	return
+}
+
+func (d *Decoder) DecodeField() (field cadence.Field, err error) {
+	// TODO meter
+	field.Identifier, err = common_codec.DecodeString(&d.r)
+	if err != nil {
+		return
+	}
+
+	field.Type, err = d.DecodeType()
+	return
+}
+
+func (d *Decoder) DecodeParameter() (parameter cadence.Parameter, err error) {
+	// TODO meter?
+	parameter.Label, err = common_codec.DecodeString(&d.r)
+	if err != nil {
+		return
+	}
+
+	parameter.Identifier, err = common_codec.DecodeString(&d.r)
+	if err != nil {
+		return
+	}
+
+	parameter.Type, err = d.DecodeType()
 	return
 }
 

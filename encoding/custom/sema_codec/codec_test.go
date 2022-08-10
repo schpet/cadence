@@ -20,7 +20,6 @@ package sema_codec_test
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,8 +32,6 @@ import (
 	"github.com/onflow/cadence/runtime/common"
 	"github.com/onflow/cadence/runtime/sema"
 )
-
-// TODO add t.Parralel() to all of the tests
 
 func TestSemaCodecSimpleTypes(t *testing.T) {
 	t.Parallel()
@@ -67,6 +64,7 @@ func TestSemaCodecSimpleTypes(t *testing.T) {
 
 	for _, typ := range tests {
 		t.Run(typ.SimpleType.Name, func(t *testing.T) {
+			t.Parallel()
 			testRootEncodeDecode(t, typ.SimpleType,
 				byte(typ.Type),
 			)
@@ -545,6 +543,7 @@ func TestSemaCodecMiscTypes(t *testing.T) {
 
 			// minimal verification
 			assert.Equal(t, restrictedType.Restrictions[0].Identifier, r.Restrictions[0].Identifier, "restriction identifier")
+			assert.Equal(t, restrictedType.Restrictions[0].Location, r.Restrictions[0].Location, "restriction location")
 		default:
 			assert.Fail(t, "Decoded type is not *sema.RestrictionType")
 		}
@@ -575,6 +574,8 @@ func TestSemaCodecBadTypes(t *testing.T) {
 	t.Parallel()
 
 	t.Run("unknown type", func(t *testing.T) {
+		t.Parallel()
+
 		_, decoder, buffer := NewTestCodec()
 
 		fakeType := byte(0xff)
@@ -585,6 +586,8 @@ func TestSemaCodecBadTypes(t *testing.T) {
 	})
 
 	t.Run("unknown simple type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, _, _ := NewTestCodec()
 
 		fakeSimpleType := &sema.SimpleType{}
@@ -594,6 +597,8 @@ func TestSemaCodecBadTypes(t *testing.T) {
 	})
 
 	t.Run("unexpected numeric type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, _, _ := NewTestCodec()
 
 		fakeNumericType := &sema.NumericType{}
@@ -603,6 +608,8 @@ func TestSemaCodecBadTypes(t *testing.T) {
 	})
 
 	t.Run("unexpected fixed point numeric type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, _, _ := NewTestCodec()
 
 		fakeFixedPointNumericType := &sema.FixedPointNumericType{}
@@ -612,15 +619,19 @@ func TestSemaCodecBadTypes(t *testing.T) {
 	})
 
 	t.Run("unexpected type", func(t *testing.T) {
+		t.Parallel()
 		t.Skip("TODO try to encode a fake sema.Type")
 	})
 
 	t.Run("unexpected location type", func(t *testing.T) {
+		t.Parallel()
 		t.Skip("TODO try to encode a fake common.Location")
 	})
 }
 
 func TestSemaCodecArrayTypes(t *testing.T) {
+	t.Parallel()
+
 	t.Run("variable", func(t *testing.T) {
 		t.Parallel()
 
@@ -648,172 +659,12 @@ func TestSemaCodecArrayTypes(t *testing.T) {
 	})
 }
 
-func TestSemaCodecLocations(t *testing.T) {
-	t.Parallel()
-
-	for _, prefix := range []string{
-		common.AddressLocationPrefix,
-		common.IdentifierLocationPrefix,
-		common.ScriptLocationPrefix,
-		common.StringLocationPrefix,
-		common.TransactionLocationPrefix,
-		common.REPLLocationPrefix,
-		sema_codec.NilLocationPrefix,
-	} {
-		t.Run(fmt.Sprintf("prefix: %s", prefix), func(t *testing.T) {
-			t.Parallel()
-
-			encoder, decoder, buffer := NewTestCodec()
-
-			testEncodeDecode(
-				t,
-				sema_codec.NilLocationPrefix,
-				buffer,
-				encoder.EncodeLocationPrefix,
-				decoder.DecodeLocationPrefix,
-				[]byte{prefix[0]},
-			)
-		})
-	}
-
-	t.Run("EncodeLocation(nil)", func(t *testing.T) {
-		t.Parallel()
-
-		encoder, decoder, buffer := NewTestCodec()
-
-		testEncodeDecode[common.Location](
-			t,
-			nil,
-			buffer,
-			encoder.EncodeLocation,
-			decoder.DecodeLocation,
-			[]byte{sema_codec.NilLocationPrefix[0]},
-		)
-	})
-
-	t.Run("EncodeLocation(Address)", func(t *testing.T) {
-		t.Parallel()
-
-		encoder, decoder, buffer := NewTestCodec()
-
-		address := common.AddressLocation{
-			Address: common.Address{12, 13, 14},
-			Name:    "foo-bar",
-		}
-		testEncodeDecode[common.Location](
-			t,
-			address,
-			buffer,
-			encoder.EncodeLocation,
-			decoder.DecodeLocation,
-			common_codec.Concat(
-				[]byte{common.AddressLocationPrefix[0]},
-				address.Address.Bytes(),
-				[]byte{0, 0, 0, byte(len(address.Name))},
-				[]byte(address.Name),
-			),
-		)
-	})
-
-	t.Run("EncodeLocation(Identifier)", func(t *testing.T) {
-		t.Parallel()
-
-		encoder, decoder, buffer := NewTestCodec()
-
-		identifier := common.IdentifierLocation("id \x01 \x00\n\rsomeid\n")
-		testEncodeDecode[common.Location](
-			t,
-			identifier,
-			buffer,
-			encoder.EncodeLocation,
-			decoder.DecodeLocation,
-			common_codec.Concat(
-				[]byte{common.IdentifierLocationPrefix[0]},
-				[]byte{0, 0, 0, byte(len(identifier))},
-				[]byte(identifier),
-			),
-		)
-	})
-
-	t.Run("EncodeLocation(Script)", func(t *testing.T) {
-		t.Parallel()
-
-		encoder, decoder, buffer := NewTestCodec()
-
-		location := common.ScriptLocation{'i', 'd', ' ', 1, 0, '\n', '\r', 's', 'o', 'm', 'e', 'i', 'd', '\n'}
-		testEncodeDecode[common.Location](
-			t,
-			location,
-			buffer,
-			encoder.EncodeLocation,
-			decoder.DecodeLocation,
-			common_codec.Concat(
-				[]byte{common.ScriptLocationPrefix[0]},
-				location[:],
-			),
-		)
-	})
-
-	t.Run("EncodeLocation(String)", func(t *testing.T) {
-		t.Parallel()
-
-		encoder, decoder, buffer := NewTestCodec()
-
-		location := common.StringLocation("id \x01 \x00\n\rsomeid\n")
-		testEncodeDecode[common.Location](
-			t,
-			location,
-			buffer,
-			encoder.EncodeLocation,
-			decoder.DecodeLocation,
-			common_codec.Concat(
-				[]byte{common.StringLocationPrefix[0]},
-				[]byte{0, 0, 0, byte(len(location))},
-				[]byte(location),
-			),
-		)
-	})
-
-	t.Run("EncodeLocation(Transaction)", func(t *testing.T) {
-		t.Parallel()
-
-		encoder, decoder, buffer := NewTestCodec()
-
-		location := common.TransactionLocation{'i', 'd', ' ', 1, 0, '\n', '\r', 's', 'o', 'm', 'e', 'i', 'd', '\n'}
-		testEncodeDecode[common.Location](
-			t,
-			location,
-			buffer,
-			encoder.EncodeLocation,
-			decoder.DecodeLocation,
-			common_codec.Concat(
-				[]byte{common.TransactionLocationPrefix[0]},
-				location[:],
-			),
-		)
-	})
-
-	t.Run("EncodeLocation(REPL)", func(t *testing.T) {
-		t.Parallel()
-
-		encoder, decoder, buffer := NewTestCodec()
-
-		s := common.REPLLocation{}
-		testEncodeDecode[common.Location](
-			t,
-			s,
-			buffer,
-			encoder.EncodeLocation,
-			decoder.DecodeLocation,
-			[]byte{common.REPLLocationPrefix[0]},
-		)
-	})
-}
-
 func TestSemaCodecInterfaceType(t *testing.T) {
 	t.Parallel()
 
 	t.Run("custom InterfaceType", func(t *testing.T) {
+		t.Parallel()
+
 		location := common.TransactionLocation{1, 3, 9, 27, 81}
 
 		identifier := "murakami"
@@ -908,7 +759,7 @@ func TestSemaCodecInterfaceType(t *testing.T) {
 			[]byte{byte(common_codec.EncodedBoolTrue)},
 
 			[]byte{byte(sema_codec.EncodedSemaInterfaceType)}, // container type is empty interface
-			[]byte{sema_codec.NilLocationPrefix[0]},
+			[]byte{common_codec.NilLocationPrefix[0]},
 			[]byte{0, 0, 0, 0},
 			[]byte{byte(common.CompositeKindUnknown)},
 			[]byte{byte(common_codec.EncodedBoolFalse)},
@@ -966,6 +817,8 @@ func TestSemaCodecCompositeType(t *testing.T) {
 	t.Parallel()
 
 	t.Run("AuthAccountType (IsContainerType=true)", func(t *testing.T) {
+		t.Parallel()
+
 		ty := sema.AuthAccountType
 
 		encoder, decoder, _ := NewTestCodec()
@@ -986,6 +839,8 @@ func TestSemaCodecCompositeType(t *testing.T) {
 	})
 
 	t.Run("AccountKeyType", func(t *testing.T) {
+		t.Parallel()
+
 		theCompositeType := sema.AccountKeyType
 
 		encoder, buffer := NewTestEncoder()
@@ -998,7 +853,7 @@ func TestSemaCodecCompositeType(t *testing.T) {
 			byte(sema_codec.EncodedSemaCompositeType),
 
 			// location
-			sema_codec.NilLocationPrefix[0],
+			common_codec.NilLocationPrefix[0],
 
 			// length of identifier
 			0, 0, 0,
@@ -1078,6 +933,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	t.Parallel()
 
 	t.Run("CompositeType", func(t *testing.T) {
+		t.Parallel()
+
 		c := &sema.CompositeType{}
 		c.SetContainerType(c)
 
@@ -1088,7 +945,7 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 
 		expected := []byte{
 			byte(sema_codec.EncodedSemaCompositeType),
-			sema_codec.NilLocationPrefix[0],
+			common_codec.NilLocationPrefix[0],
 			0, 0, 0, 0, // identifier length
 			0,                                                   // composite kind
 			byte(common_codec.EncodedBoolTrue),                  // ExplicitInterfaceConformances array is nil
@@ -1118,6 +975,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	})
 
 	t.Run("InterfaceType", func(t *testing.T) {
+		t.Parallel()
+
 		c := &sema.InterfaceType{}
 		c.SetContainerType(c)
 
@@ -1128,7 +987,7 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 
 		expected := []byte{
 			byte(sema_codec.EncodedSemaInterfaceType),
-			sema_codec.NilLocationPrefix[0],
+			common_codec.NilLocationPrefix[0],
 			0, 0, 0, 0, // identifier length
 			0,                                                   // composite kind
 			byte(common_codec.EncodedBoolTrue),                  // Members array is nil
@@ -1153,6 +1012,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	})
 
 	t.Run("GenericType", func(t *testing.T) {
+		t.Parallel()
+
 		parent := &sema.GenericType{} // extra layer to test non-zero pointer
 
 		g := &sema.GenericType{}
@@ -1186,6 +1047,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	})
 
 	t.Run("FunctionType", func(t *testing.T) {
+		t.Parallel()
+
 		f := &sema.FunctionType{
 			IsConstructor:            false,
 			TypeParameters:           nil,
@@ -1222,6 +1085,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	})
 
 	t.Run("DictionaryType", func(t *testing.T) {
+		t.Parallel()
+
 		d := &sema.DictionaryType{}
 		d.KeyType = d
 		d.ValueType = d
@@ -1238,6 +1103,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	})
 
 	t.Run("TransactionType", func(t *testing.T) {
+		t.Parallel()
+
 		tx := &sema.TransactionType{
 			Members:           nil,
 			Fields:            nil,
@@ -1272,6 +1139,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	})
 
 	t.Run("RestrictedType", func(t *testing.T) {
+		t.Parallel()
+
 		r := &sema.RestrictedType{}
 		r.Type = r
 
@@ -1287,6 +1156,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	})
 
 	t.Run("ConstantSizedType", func(t *testing.T) {
+		t.Parallel()
+
 		c := &sema.ConstantSizedType{}
 		c.Type = c
 
@@ -1302,6 +1173,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	})
 
 	t.Run("VariableSizedType", func(t *testing.T) {
+		t.Parallel()
+
 		v := &sema.VariableSizedType{}
 		v.Type = v
 
@@ -1316,6 +1189,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	})
 
 	t.Run("OptionalType", func(t *testing.T) {
+		t.Parallel()
+
 		o := &sema.OptionalType{}
 		o.Type = o
 
@@ -1330,6 +1205,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	})
 
 	t.Run("ReferenceType", func(t *testing.T) {
+		t.Parallel()
+
 		r := &sema.ReferenceType{}
 		r.Type = r
 
@@ -1345,6 +1222,8 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 	})
 
 	t.Run("CapabilityType", func(t *testing.T) {
+		t.Parallel()
+
 		v := &sema.CapabilityType{}
 		v.BorrowType = v
 
@@ -1367,6 +1246,8 @@ func TestSemaCodecElaboration(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty", func(t *testing.T) {
+		t.Parallel()
+
 		el := sema.NewElaboration(nil, false)
 
 		encoder, decoder, buffer := NewTestCodec()
@@ -1385,6 +1266,8 @@ func TestSemaCodecElaboration(t *testing.T) {
 	})
 
 	t.Run("full", func(t *testing.T) {
+		t.Parallel()
+
 		typeId := common.TypeID("houses")
 		location := common.ScriptLocation{9, 3, 1}
 		identifier := "valence"

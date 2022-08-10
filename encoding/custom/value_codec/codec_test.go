@@ -27,8 +27,8 @@ import (
 
 	"github.com/onflow/cadence"
 	"github.com/onflow/cadence/encoding/custom/common_codec"
-
 	"github.com/onflow/cadence/encoding/custom/value_codec"
+	"github.com/onflow/cadence/runtime/common"
 )
 
 func TestValueCodecVoid(t *testing.T) {
@@ -56,6 +56,8 @@ func TestValueCodecVoid(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewVoidType()
@@ -129,6 +131,8 @@ func TestValueCodecBool(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewBoolType()
@@ -231,6 +235,8 @@ func TestValueCodecOptional(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		innerType := cadence.NewBoolType()
@@ -312,6 +318,8 @@ func TestValueCodecString(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewStringType()
@@ -388,6 +396,8 @@ func TestValueCodecBytes(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewBytesType()
@@ -469,6 +479,8 @@ func TestValueCodecCharacter(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewCharacterType()
@@ -542,6 +554,8 @@ func TestValueCodecAddress(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewAddressType()
@@ -649,6 +663,8 @@ func TestValueCodecInt(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewIntType()
@@ -756,6 +772,8 @@ func TestValueCodecInt128(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewInt128Type()
@@ -863,6 +881,8 @@ func TestValueCodecInt256(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewInt256Type()
@@ -943,6 +963,8 @@ func TestValueCodecUInt128(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewUInt128Type()
@@ -1023,6 +1045,8 @@ func TestValueCodecUInt256(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewUInt256Type()
@@ -1103,6 +1127,8 @@ func TestValueCodecUInt(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewUIntType()
@@ -1565,6 +1591,8 @@ func TestValueCodecArray(t *testing.T) {
 	})
 
 	t.Run("variable type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		innerType := cadence.NewAnyType()
@@ -1654,6 +1682,8 @@ func TestValueCodecArray(t *testing.T) {
 	})
 
 	t.Run("constant type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		size := uint(12)
@@ -1761,6 +1791,8 @@ func TestValueCodecDictionary(t *testing.T) {
 	})
 
 	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
 		encoder, decoder, buffer := NewTestCodec()
 
 		typ := cadence.NewDictionaryType(cadence.AnyResourceType{}, cadence.SignedNumberType{})
@@ -1775,6 +1807,140 @@ func TestValueCodecDictionary(t *testing.T) {
 				byte(value_codec.EncodedTypeAnyResourceType),
 				byte(value_codec.EncodedTypeSignedNumber),
 			},
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+}
+
+func TestValueCodecStruct(t *testing.T) {
+	t.Parallel()
+
+	t.Run("value", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		location := common.REPLLocation{}
+		qualifiedIdentifier := "neon"
+		fieldsTypes := []cadence.Field{
+			{
+				Identifier: "argon",
+				Type:       cadence.UInt16Type{},
+			},
+		}
+		initializers := [][]cadence.Parameter{
+			{
+				{
+					Label:      "lebal",
+					Identifier: "home",
+					Type:       cadence.Word8Type{},
+				},
+			},
+		}
+		structType := cadence.NewStructType(
+			location,
+			qualifiedIdentifier,
+			fieldsTypes,
+			initializers,
+		)
+
+		fieldValue := uint16(12)
+		fields := []cadence.Value{
+			cadence.NewUInt16(fieldValue),
+		}
+		value := cadence.NewStruct(fields).
+			WithType(structType)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueStruct)},
+				[]byte{common.REPLLocationPrefix[0]},
+				[]byte{0, 0, 0, byte(len(qualifiedIdentifier))},
+				[]byte(qualifiedIdentifier),
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{0, 0, 0, byte(len(fieldsTypes[0].Identifier))},
+				[]byte(fieldsTypes[0].Identifier),
+				[]byte{byte(value_codec.EncodedTypeUInt16)},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{0, 0, 0, byte(len(initializers[0][0].Label))},
+				[]byte(initializers[0][0].Label),
+				[]byte{0, 0, 0, byte(len(initializers[0][0].Identifier))},
+				[]byte(initializers[0][0].Identifier),
+				[]byte{byte(value_codec.EncodedTypeWord8)},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{byte(value_codec.EncodedValueUInt16)},
+				[]byte{0, byte(fieldValue)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		location := common.REPLLocation{}
+		qualifiedIdentifier := "neon"
+		fieldsTypes := []cadence.Field{
+			{
+				Identifier: "argon",
+				Type:       cadence.UInt16Type{},
+			},
+		}
+		initializers := [][]cadence.Parameter{
+			{
+				{
+					Label:      "lebal",
+					Identifier: "home",
+					Type:       cadence.Word8Type{},
+				},
+			},
+		}
+		typ := cadence.NewStructType(
+			location,
+			qualifiedIdentifier,
+			fieldsTypes,
+			initializers,
+		)
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedTypeStruct)},
+				[]byte{common.REPLLocationPrefix[0]},
+				[]byte{0, 0, 0, byte(len(qualifiedIdentifier))},
+				[]byte(qualifiedIdentifier),
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{0, 0, 0, byte(len(fieldsTypes[0].Identifier))},
+				[]byte(fieldsTypes[0].Identifier),
+				[]byte{byte(value_codec.EncodedTypeUInt16)},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{0, 0, 0, byte(len(initializers[0][0].Label))},
+				[]byte(initializers[0][0].Label),
+				[]byte{0, 0, 0, byte(len(initializers[0][0].Identifier))},
+				[]byte(initializers[0][0].Identifier),
+				[]byte{byte(value_codec.EncodedTypeWord8)},
+			),
 			buffer.Bytes(),
 			"encoded bytes differ",
 		)
