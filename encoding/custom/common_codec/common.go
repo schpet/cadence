@@ -447,13 +447,13 @@ func DecodeTransactionLocation(r io.Reader, memoryGauge common.MemoryGauge) (loc
 // Misc
 //
 
-func Concat(deep ...[]byte) []byte {
+func Concat[T any](deep ...[]T) []T {
 	length := 0
 	for _, b := range deep {
 		length += len(b)
 	}
 
-	flat := make([]byte, 0, length)
+	flat := make([]T, 0, length)
 	for _, b := range deep {
 		flat = append(flat, b...)
 	}
