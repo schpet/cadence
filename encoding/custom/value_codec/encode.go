@@ -308,6 +308,13 @@ func (e *Encoder) EncodeValue(value cadence.Value) (err error) {
 			return
 		}
 		return e.EncodeCapability(v)
+	case cadence.Enum:
+		err = e.EncodeValueIdentifier(EncodedValueEnum)
+		if err != nil {
+			return
+		}
+		return e.EncodeEnum(v)
+
 	}
 
 	return fmt.Errorf("unexpected value: ${value}")
@@ -446,6 +453,16 @@ func (e *Encoder) EncodeCapability(value cadence.Capability) (err error) {
 	return e.EncodeType(value.BorrowType)
 }
 
+func (e *Encoder) EncodeEnum(value cadence.Enum) (err error) {
+	err = e.EncodeEnumType(value.EnumType)
+	if err != nil {
+		return
+	}
+	return EncodeArray(e, value.Fields, func(field cadence.Value) (err error) {
+		return e.EncodeValue(field)
+	})
+}
+
 //
 // Types
 //
@@ -570,6 +587,12 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 			return
 		}
 		return e.EncodeType(actualType.BorrowType)
+	case *cadence.EnumType:
+		err = e.EncodeTypeIdentifier(EncodedTypeEnum)
+		if err != nil {
+			return
+		}
+		return e.EncodeEnumType(actualType)
 
 	case cadence.NeverType:
 		return e.EncodeTypeIdentifier(EncodedTypeNever)
@@ -694,6 +717,33 @@ func (e *Encoder) EncodeContractType(t *cadence.ContractType) (err error) {
 	}
 
 	err = common_codec.EncodeString(&e.w, t.QualifiedIdentifier)
+	if err != nil {
+		return
+	}
+
+	err = EncodeArray(e, t.Fields, func(field cadence.Field) (err error) {
+		return e.EncodeField(field)
+	})
+
+	return EncodeArray(e, t.Initializers, func(parameters []cadence.Parameter) (err error) {
+		return EncodeArray(e, parameters, func(parameter cadence.Parameter) (err error) {
+			return e.EncodeParameter(parameter)
+		})
+	})
+}
+
+func (e *Encoder) EncodeEnumType(t *cadence.EnumType) (err error) {
+	err = common_codec.EncodeLocation(&e.w, t.Location)
+	if err != nil {
+		return
+	}
+
+	err = common_codec.EncodeString(&e.w, t.QualifiedIdentifier)
+	if err != nil {
+		return
+	}
+
+	err = e.EncodeType(t.RawType)
 	if err != nil {
 		return
 	}

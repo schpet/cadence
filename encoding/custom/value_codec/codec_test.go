@@ -2577,6 +2577,146 @@ func TestValueCodecCapability(t *testing.T) {
 	})
 }
 
+func TestValueCodecEnum(t *testing.T) {
+	t.Parallel()
+
+	t.Run("value", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		location := common.REPLLocation{}
+		qualifiedIdentifier := "neon"
+		rawType := cadence.NewNeverType()
+		fieldsTypes := []cadence.Field{
+			{
+				Identifier: "argon",
+				Type:       cadence.UInt16Type{},
+			},
+		}
+		initializers := [][]cadence.Parameter{
+			{
+				{
+					Label:      "lebal",
+					Identifier: "home",
+					Type:       cadence.Word8Type{},
+				},
+			},
+		}
+		enumType := cadence.NewEnumType(
+			location,
+			qualifiedIdentifier,
+			rawType,
+			fieldsTypes,
+			initializers,
+		)
+
+		fieldValue := uint16(12)
+		fields := []cadence.Value{
+			cadence.NewUInt16(fieldValue),
+		}
+		value := cadence.NewEnum(fields).
+			WithType(enumType)
+
+		err := encoder.Encode(value)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedValueEnum)},
+				[]byte{common.REPLLocationPrefix[0]},
+				[]byte{0, 0, 0, byte(len(qualifiedIdentifier))},
+				[]byte(qualifiedIdentifier),
+				[]byte{byte(value_codec.EncodedTypeNever)},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{0, 0, 0, byte(len(fieldsTypes[0].Identifier))},
+				[]byte(fieldsTypes[0].Identifier),
+				[]byte{byte(value_codec.EncodedTypeUInt16)},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{0, 0, 0, byte(len(initializers[0][0].Label))},
+				[]byte(initializers[0][0].Label),
+				[]byte{0, 0, 0, byte(len(initializers[0][0].Identifier))},
+				[]byte(initializers[0][0].Identifier),
+				[]byte{byte(value_codec.EncodedTypeWord8)},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{byte(value_codec.EncodedValueUInt16)},
+				[]byte{0, byte(fieldValue)},
+			),
+			buffer.Bytes(), "encoded bytes differ")
+
+		output, err := decoder.Decode()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, value, output, "decoded value differs")
+	})
+
+	t.Run("type", func(t *testing.T) {
+		t.Parallel()
+
+		encoder, decoder, buffer := NewTestCodec()
+
+		location := common.REPLLocation{}
+		qualifiedIdentifier := "neon"
+		rawType := cadence.NewNeverType()
+		fieldsTypes := []cadence.Field{
+			{
+				Identifier: "argon",
+				Type:       cadence.UInt16Type{},
+			},
+		}
+		initializers := [][]cadence.Parameter{
+			{
+				{
+					Label:      "lebal",
+					Identifier: "home",
+					Type:       cadence.Word8Type{},
+				},
+			},
+		}
+		typ := cadence.NewEnumType(
+			location,
+			qualifiedIdentifier,
+			rawType,
+			fieldsTypes,
+			initializers,
+		)
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(value_codec.EncodedTypeEnum)},
+				[]byte{common.REPLLocationPrefix[0]},
+				[]byte{0, 0, 0, byte(len(qualifiedIdentifier))},
+				[]byte(qualifiedIdentifier),
+				[]byte{byte(value_codec.EncodedTypeNever)},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{0, 0, 0, byte(len(fieldsTypes[0].Identifier))},
+				[]byte(fieldsTypes[0].Identifier),
+				[]byte{byte(value_codec.EncodedTypeUInt16)},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{byte(common_codec.EncodedBoolFalse), 0, 0, 0, 1},
+				[]byte{0, 0, 0, byte(len(initializers[0][0].Label))},
+				[]byte(initializers[0][0].Label),
+				[]byte{0, 0, 0, byte(len(initializers[0][0].Identifier))},
+				[]byte(initializers[0][0].Identifier),
+				[]byte{byte(value_codec.EncodedTypeWord8)},
+			),
+			buffer.Bytes(),
+			"encoded bytes differ",
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+}
+
 func TestValueCodecAbstractTypes(t *testing.T) {
 	t.Parallel()
 

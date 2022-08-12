@@ -167,6 +167,8 @@ func (d *Decoder) DecodeValue() (value cadence.Value, err error) {
 		value, err = d.DecodePath()
 	case EncodedValueCapability:
 		value, err = d.DecodeCapability()
+	case EncodedValueEnum:
+		value, err = d.DecodeEnum()
 
 	default:
 		err = fmt.Errorf("unknown cadence.Value: %s", value)
@@ -549,7 +551,18 @@ func (d *Decoder) DecodeStruct() (s cadence.Struct, err error) {
 		return
 	}
 
-	s = cadence.NewStruct(fields).WithType(structType)
+	s, err = cadence.NewMeteredStruct(
+		d.memoryGauge,
+		len(fields),
+		func() ([]cadence.Value, error) {
+			return fields, nil
+		},
+	)
+	if err != nil {
+		return
+	}
+
+	s = s.WithType(structType)
 	return
 }
 
@@ -566,7 +579,18 @@ func (d *Decoder) DecodeResource() (s cadence.Resource, err error) {
 		return
 	}
 
-	s = cadence.NewResource(fields).WithType(resourceType)
+	s, err = cadence.NewMeteredResource(
+		d.memoryGauge,
+		len(fields),
+		func() ([]cadence.Value, error) {
+			return fields, nil
+		},
+	)
+	if err != nil {
+		return
+	}
+
+	s = s.WithType(resourceType)
 	return
 }
 
@@ -583,7 +607,18 @@ func (d *Decoder) DecodeEvent() (s cadence.Event, err error) {
 		return
 	}
 
-	s = cadence.NewEvent(fields).WithType(eventType)
+	s, err = cadence.NewMeteredEvent(
+		d.memoryGauge,
+		len(fields),
+		func() ([]cadence.Value, error) {
+			return fields, nil
+		},
+	)
+	if err != nil {
+		return
+	}
+
+	s = s.WithType(eventType)
 	return
 }
 
@@ -600,7 +635,18 @@ func (d *Decoder) DecodeContract() (s cadence.Contract, err error) {
 		return
 	}
 
-	s = cadence.NewContract(fields).WithType(contractType)
+	s, err = cadence.NewMeteredContract(
+		d.memoryGauge,
+		len(fields),
+		func() ([]cadence.Value, error) {
+			return fields, nil
+		},
+	)
+	if err != nil {
+		return
+	}
+
+	s = s.WithType(contractType)
 	return
 }
 
@@ -651,6 +697,34 @@ func (d *Decoder) DecodeCapability() (capability cadence.Capability, err error) 
 	}
 
 	capability = cadence.NewMeteredCapability(d.memoryGauge, path, address, borrowType)
+	return
+}
+
+func (d *Decoder) DecodeEnum() (s cadence.Enum, err error) {
+	enumType, err := d.DecodeEnumType()
+	if err != nil {
+		return
+	}
+
+	fields, err := DecodeArray(d, func() (cadence.Value, error) {
+		return d.DecodeValue()
+	})
+	if err != nil {
+		return
+	}
+
+	s, err = cadence.NewMeteredEnum(
+		d.memoryGauge,
+		len(fields),
+		func() ([]cadence.Value, error) {
+			return fields, nil
+		},
+	)
+	if err != nil {
+		return
+	}
+
+	s = s.WithType(enumType)
 	return
 }
 
@@ -759,6 +833,8 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 			return
 		}
 		t = cadence.NewMeteredCapabilityType(d.memoryGauge, borrowType)
+	case EncodedTypeEnum:
+		return d.DecodeEnumType()
 
 	case EncodedTypeAnyType:
 		t = cadence.NewMeteredAnyType(d.memoryGauge)
@@ -939,6 +1015,39 @@ func (d *Decoder) DecodeContractType() (t *cadence.ContractType, err error) {
 	})
 
 	t = cadence.NewMeteredContractType(d.memoryGauge, location, qualifiedIdentifier, fields, initializers)
+	return
+}
+
+func (d *Decoder) DecodeEnumType() (t *cadence.EnumType, err error) {
+	location, err := common_codec.DecodeLocation(&d.r, d.memoryGauge)
+	if err != nil {
+		return
+	}
+
+	qualifiedIdentifier, err := common_codec.DecodeString(&d.r)
+	if err != nil {
+		return
+	}
+
+	rawType, err := d.DecodeType()
+	if err != nil {
+		return
+	}
+
+	fields, err := DecodeArray(d, func() (field cadence.Field, err error) {
+		return d.DecodeField()
+	})
+	if err != nil {
+		return
+	}
+
+	initializers, err := DecodeArray(d, func() ([]cadence.Parameter, error) {
+		return DecodeArray(d, func() (cadence.Parameter, error) {
+			return d.DecodeParameter()
+		})
+	})
+
+	t = cadence.NewMeteredEnumType(d.memoryGauge, location, qualifiedIdentifier, rawType, fields, initializers)
 	return
 }
 
