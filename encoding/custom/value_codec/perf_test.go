@@ -31,6 +31,8 @@ import (
 	"github.com/onflow/cadence/runtime/common"
 )
 
+type MeasureCodec = func(p cadence.Value) (time.Duration, time.Duration, int, error)
+
 func measureValueCodec(value cadence.Value) (
 	encodingDuration time.Duration,
 	decodingDuration time.Duration,
@@ -97,6 +99,79 @@ func average(ints []int) int {
 	return sum / len(ints)
 }
 
+// codec -> value -> iteration -> measurement
+
+type Raw struct {
+	EncodingDurations []int
+	DecodingDurations []int
+}
+
+type Stats struct {
+	Average int
+	Minimum int
+	Maximum int
+}
+
+func (s *Stats) Derive(raw []int) {
+	sort.Ints(raw)
+	s.Average = average(raw)
+	s.Minimum = raw[0]
+	s.Maximum = raw[len(raw)-1]
+}
+
+type Measurements struct {
+	Raw      Raw // order not preserved
+	Encoding Stats
+	Decoding Stats
+	Size     int
+}
+
+func NewMeasurements(iterations int) Measurements {
+	return Measurements{
+		Raw: Raw{
+			EncodingDurations: make([]int, 0, iterations),
+			DecodingDurations: make([]int, 0, iterations),
+		},
+		Encoding: Stats{
+			Average: -1,
+			Minimum: -1,
+			Maximum: -1,
+		},
+		Decoding: Stats{
+			Average: -1,
+			Minimum: -1,
+			Maximum: -1,
+		},
+		Size: -1,
+	}
+}
+
+func (m *Measurements) Derive() {
+	m.Encoding.Derive(m.Raw.EncodingDurations)
+	m.Decoding.Derive(m.Raw.DecodingDurations)
+}
+
+func measure(value cadence.Value, iterations int, measureCodec MeasureCodec) (measurements Measurements, err error) {
+	measurements = NewMeasurements(iterations)
+
+	size := -1
+
+	for i := 0; i < iterations; i++ {
+		var encodingDuration, decodingDuration time.Duration
+		encodingDuration, decodingDuration, size, err = measureCodec(value)
+		if err != nil {
+			return
+		}
+		measurements.Raw.EncodingDurations = append(measurements.Raw.EncodingDurations, int(encodingDuration))
+		measurements.Raw.DecodingDurations = append(measurements.Raw.DecodingDurations, int(decodingDuration))
+	}
+
+	measurements.Derive()
+	measurements.Size = size
+
+	return
+}
+
 func TestCodecPerformance(t *testing.T) {
 	// not parallel
 
@@ -121,133 +196,43 @@ func TestCodecPerformance(t *testing.T) {
 		)),
 	}
 
-	jsonEncodingDurations := make([][]int, len(values))
-	jsonDecodingDurations := make([][]int, len(values))
-	jsonEncodedSizes := make([][]int, len(values))
-
-	valueEncodingDurations := make([][]int, len(values))
-	valueDecodingDurations := make([][]int, len(values))
-	valueEncodedSizes := make([][]int, len(values))
-
-	for i, value := range values {
-		jsonEncodingDurations[i] = make([]int, iterations)
-		jsonDecodingDurations[i] = make([]int, iterations)
-		jsonEncodedSizes[i] = make([]int, iterations)
-
-		valueEncodingDurations[i] = make([]int, iterations)
-		valueDecodingDurations[i] = make([]int, iterations)
-		valueEncodedSizes[i] = make([]int, iterations)
-
-		for j := 0; j < iterations; j++ {
-			encodingDuration, decodingDuration, size, err := measureJsonCodec(value)
-			require.NoError(t, err, "json codec error")
-			jsonEncodingDurations[i][j] = int(encodingDuration)
-			jsonDecodingDurations[i][j] = int(decodingDuration)
-			jsonEncodedSizes[i][j] = size
-
-			encodingDuration, decodingDuration, size, err = measureValueCodec(value)
-			require.NoError(t, err, "value codec error")
-			valueEncodingDurations[i][j] = int(encodingDuration)
-			valueDecodingDurations[i][j] = int(decodingDuration)
-			valueEncodedSizes[i][j] = size
-		}
-	}
-
-	averageJsonEncodingDurations := make([]int, len(values))
-	averageJsonDecodingDurations := make([]int, len(values))
-	averageJsonEncodedSizes := make([]int, len(values))
-
-	averageValueEncodingDurations := make([]int, len(values))
-	averageValueDecodingDurations := make([]int, len(values))
-	averageValueEncodedSizes := make([]int, len(values))
-
-	diffEncodingDurations := make([]float64, len(values))
-	diffDecodingDurations := make([]float64, len(values))
-	diffEncodedSizes := make([]float64, len(values))
-
-	minJsonEncodingDurations := make([]int, len(values))
-	minJsonDecodingDurations := make([]int, len(values))
-	minJsonEncodedSizes := make([]int, len(values))
-
-	minValueEncodingDurations := make([]int, len(values))
-	minValueDecodingDurations := make([]int, len(values))
-	minValueEncodedSizes := make([]int, len(values))
-
-	maxJsonEncodingDurations := make([]int, len(values))
-	maxJsonDecodingDurations := make([]int, len(values))
-	maxJsonEncodedSizes := make([]int, len(values))
-
-	maxValueEncodingDurations := make([]int, len(values))
-	maxValueDecodingDurations := make([]int, len(values))
-	maxValueEncodedSizes := make([]int, len(values))
-
-	for i := range values {
-		sort.Ints(jsonEncodingDurations[i])
-		sort.Ints(jsonDecodingDurations[i])
-		sort.Ints(jsonEncodedSizes[i])
-
-		sort.Ints(valueEncodingDurations[i])
-		sort.Ints(valueDecodingDurations[i])
-		sort.Ints(valueEncodedSizes[i])
-
-		averageJsonEncodingDurations[i] = average(jsonEncodingDurations[i])
-		averageJsonDecodingDurations[i] = average(jsonDecodingDurations[i])
-		averageJsonEncodedSizes[i] = average(jsonEncodedSizes[i])
-
-		averageValueEncodingDurations[i] = average(valueEncodingDurations[i])
-		averageValueDecodingDurations[i] = average(valueDecodingDurations[i])
-		averageValueEncodedSizes[i] = average(valueEncodedSizes[i])
-
-		diffEncodingDurations[i] = float64(averageJsonEncodingDurations[i]) / float64(averageValueEncodingDurations[i])
-		diffDecodingDurations[i] = float64(averageJsonDecodingDurations[i]) / float64(averageValueDecodingDurations[i])
-		diffEncodedSizes[i] = float64(averageJsonEncodedSizes[i]) / float64(averageValueEncodedSizes[i])
-
-		minJsonEncodingDurations[i] = jsonEncodingDurations[i][0]
-		minJsonDecodingDurations[i] = jsonDecodingDurations[i][0]
-		minJsonEncodedSizes[i] = jsonEncodedSizes[i][0]
-
-		minValueEncodingDurations[i] = valueEncodingDurations[i][0]
-		minValueDecodingDurations[i] = valueDecodingDurations[i][0]
-		minValueEncodedSizes[i] = valueEncodedSizes[i][0]
-
-		maxJsonEncodingDurations[i] = jsonEncodingDurations[i][iterations-1]
-		maxJsonDecodingDurations[i] = jsonDecodingDurations[i][iterations-1]
-		maxJsonEncodedSizes[i] = jsonEncodedSizes[i][iterations-1]
-
-		maxValueEncodingDurations[i] = valueEncodingDurations[i][iterations-1]
-		maxValueDecodingDurations[i] = valueDecodingDurations[i][iterations-1]
-		maxValueEncodedSizes[i] = valueEncodedSizes[i][iterations-1]
-	}
-
 	fmt.Println("Results:")
 	fmt.Println("(higher speedup/reduction is better)")
+	fmt.Println()
 
-	for i, value := range values {
+	for _, value := range values {
+		jsonMeasurements, err := measure(value, iterations, measureJsonCodec)
+		require.NoError(t, err, "json codec error")
+
+		valueMeasurements, err := measure(value, iterations, measureValueCodec)
+		require.NoError(t, err, "value codec error")
+
+		encodingSpeedup := float64(jsonMeasurements.Encoding.Average) / float64(valueMeasurements.Encoding.Average)
+		decodingSpeedup := float64(jsonMeasurements.Decoding.Average) / float64(valueMeasurements.Decoding.Average)
+		sizeReduction := float64(jsonMeasurements.Size) / float64(valueMeasurements.Size)
+
 		fmt.Println("Cadence Value: ", value.String())
+		fmt.Printf("(Type: %s)\n", value.Type().ID())
 		fmt.Println("Encoding Time (ns):")
-		fmt.Println("\tJSON Average: ", averageJsonEncodingDurations[i])
-		fmt.Println("\tJSON Minimum: ", minJsonEncodingDurations[i])
-		fmt.Println("\tJSON Maximum: ", maxJsonEncodingDurations[i])
-		fmt.Println("\tValue Average: ", averageValueEncodingDurations[i])
-		fmt.Println("\tValue Minimum: ", minValueEncodingDurations[i])
-		fmt.Println("\tValue Maximum: ", maxValueEncodingDurations[i])
-		fmt.Println("\tSpeedup:", diffEncodingDurations[i])
+		fmt.Println("\tJSON Average: ", jsonMeasurements.Encoding.Average)
+		fmt.Println("\tJSON Minimum: ", jsonMeasurements.Encoding.Minimum)
+		fmt.Println("\tJSON Maximum: ", jsonMeasurements.Encoding.Maximum)
+		fmt.Println("\tValue Average: ", valueMeasurements.Encoding.Average)
+		fmt.Println("\tValue Minimum: ", valueMeasurements.Encoding.Minimum)
+		fmt.Println("\tValue Maximum: ", valueMeasurements.Encoding.Maximum)
+		fmt.Println("\tSpeedup:", encodingSpeedup)
 		fmt.Println("Decoding Time (ns):")
-		fmt.Println("\tJSON Average: ", averageJsonDecodingDurations[i])
-		fmt.Println("\tJSON Minimum: ", minJsonDecodingDurations[i])
-		fmt.Println("\tJSON Maximum: ", maxJsonDecodingDurations[i])
-		fmt.Println("\tValue Average: ", averageValueDecodingDurations[i])
-		fmt.Println("\tValue Minimum: ", minValueDecodingDurations[i])
-		fmt.Println("\tValue Maximum: ", maxValueDecodingDurations[i])
-		fmt.Println("\tSpeedup:", diffDecodingDurations[i])
+		fmt.Println("\tJSON Average: ", jsonMeasurements.Decoding.Average)
+		fmt.Println("\tJSON Minimum: ", jsonMeasurements.Decoding.Minimum)
+		fmt.Println("\tJSON Maximum: ", jsonMeasurements.Decoding.Maximum)
+		fmt.Println("\tValue Average: ", valueMeasurements.Decoding.Average)
+		fmt.Println("\tValue Minimum: ", valueMeasurements.Decoding.Minimum)
+		fmt.Println("\tValue Maximum: ", valueMeasurements.Decoding.Maximum)
+		fmt.Println("\tSpeedup:", decodingSpeedup)
 		fmt.Println("Size (bytes):")
-		fmt.Println("\tJSON Average: ", averageJsonEncodedSizes[i])
-		fmt.Println("\tJSON Minimum: ", minJsonEncodedSizes[i])
-		fmt.Println("\tJSON Maximum: ", maxJsonEncodedSizes[i])
-		fmt.Println("\tValue Average: ", averageValueEncodedSizes[i])
-		fmt.Println("\tValue Minimum: ", minValueEncodedSizes[i])
-		fmt.Println("\tValue Maximum: ", maxValueEncodedSizes[i])
-		fmt.Println("\tReduction:", diffEncodedSizes[i])
+		fmt.Println("\tJSON: ", jsonMeasurements.Size)
+		fmt.Println("\tValue: ", valueMeasurements.Size)
+		fmt.Println("\tReduction:", sizeReduction)
 		fmt.Println()
 	}
 
