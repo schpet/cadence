@@ -31,6 +31,61 @@ import (
 	"github.com/onflow/cadence/runtime/common"
 )
 
+//
+// Benchmark
+//
+
+
+func BenchmarkCodec(b *testing.B) {
+	tests := []cadence.Value{
+		cadence.String("This sentence is composed of exactly fifty-nine characters."),
+		cadence.NewResource([]cadence.Value{
+			cadence.Bool(true),
+		}).WithType(cadence.NewResourceType(
+			common.AddressLocation{
+				Address: common.Address{1, 2, 3, 4, 5, 6, 7, 8},
+				Name:    "NFT",
+			},
+			"A.12345678.NFT",
+			[]cadence.Field{
+				{
+					Identifier: "Awesome?",
+					Type:       cadence.BoolType{},
+				},
+			},
+			[][]cadence.Parameter{},
+		)),
+	}
+
+	for _, value := range tests {
+		b.Run(fmt.Sprintf("json_%s", value.Type().ID()), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				blob, err := json.Encode(value)
+				require.NoError(b, err, "encoding error")
+
+				_, err = json.Decode(nil, blob)
+				require.NoError(b, err, "decoding error")
+			}
+		})
+		b.Run(fmt.Sprintf("value_%s", value.Type().ID()), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				encoder, decoder, _ := NewTestCodec()
+
+				err := encoder.EncodeValue(value)
+				require.NoError(b, err, "encoding error")
+
+				_, err = decoder.Decode()
+				require.NoError(b, err, "decoding error")
+			}
+
+		})
+	}
+}
+
+//
+// Test Driver
+//
+
 type MeasureCodec = func(p cadence.Value) (time.Duration, time.Duration, int, error)
 
 func measureValueCodec(value cadence.Value) (
