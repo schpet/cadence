@@ -191,6 +191,28 @@ func TestSemaCodecMiscTypes(t *testing.T) {
 		)
 	})
 
+	t.Run("GenericType (no TypeBound)", func(t *testing.T) {
+		t.Parallel()
+
+		name := "could be anything"
+
+		testRootEncodeDecode(
+			t,
+			&sema.GenericType{TypeParameter: &sema.TypeParameter{
+				Name:      name,
+				TypeBound: nil,
+				Optional:  true,
+			}},
+			common_codec.Concat(
+				[]byte{byte(sema_codec.EncodedSemaGenericType)},
+				[]byte{0, 0, 0, byte(len(name))},
+				[]byte(name),
+				[]byte{byte(sema_codec.EncodedSemaNilType)},
+				[]byte{byte(common_codec.EncodedBoolTrue)},
+			)...,
+		)
+	})
+
 	t.Run("FunctionType", func(t *testing.T) {
 		t.Parallel()
 
@@ -240,7 +262,7 @@ func TestSemaCodecMiscTypes(t *testing.T) {
 
 		encoder, decoder, buffer := NewTestCodec()
 
-		err := encoder.Encode(functionType)
+		err := encoder.EncodeType(functionType)
 		require.NoError(t, err, "encoding error")
 
 		expected := common_codec.Concat(
@@ -302,7 +324,7 @@ func TestSemaCodecMiscTypes(t *testing.T) {
 
 		assert.Equal(t, expected, buffer.Bytes(), "encoded bytes differ")
 
-		decoded, err := decoder.Decode()
+		decoded, err := decoder.DecodeType()
 		require.NoError(t, err, "decoding error")
 
 		// Cannot simply check equality between original and decoded types because they are not shallowly equal.
@@ -403,7 +425,7 @@ func TestSemaCodecMiscTypes(t *testing.T) {
 
 		encoder, decoder, buffer := NewTestCodec()
 
-		err := encoder.Encode(transactionType)
+		err := encoder.EncodeType(transactionType)
 		require.NoError(t, err, "encoding error")
 
 		expected := common_codec.Concat(
@@ -466,7 +488,7 @@ func TestSemaCodecMiscTypes(t *testing.T) {
 
 		assert.Equal(t, expected, buffer.Bytes(), "encoded bytes differ")
 
-		decoded, err := decoder.Decode()
+		decoded, err := decoder.DecodeType()
 		require.NoError(t, err, "decoding error")
 
 		// Cannot simply check equality between original and decoded types because they are not shallowly equal.
@@ -510,7 +532,7 @@ func TestSemaCodecMiscTypes(t *testing.T) {
 
 		encoder, decoder, buffer := NewTestCodec()
 
-		err := encoder.Encode(restrictedType)
+		err := encoder.EncodeType(restrictedType)
 		require.NoError(t, err, "encoding error")
 
 		expected := common_codec.Concat(
@@ -530,7 +552,7 @@ func TestSemaCodecMiscTypes(t *testing.T) {
 
 		assert.Equal(t, expected, buffer.Bytes(), "encoded bytes differ")
 
-		decoded, err := decoder.Decode()
+		decoded, err := decoder.DecodeType()
 		require.NoError(t, err, "decoding error")
 
 		// Cannot simply check equality between original and decoded types because they are not shallowly equal.
@@ -581,7 +603,7 @@ func TestSemaCodecBadTypes(t *testing.T) {
 		fakeType := byte(0xff)
 		buffer.Write([]byte{fakeType})
 
-		_, err := decoder.Decode()
+		_, err := decoder.DecodeType()
 		assert.ErrorContains(t, err, "unknown type", "encoding unknown type succeeded when it shouldn't have")
 	})
 
@@ -592,7 +614,7 @@ func TestSemaCodecBadTypes(t *testing.T) {
 
 		fakeSimpleType := &sema.SimpleType{}
 
-		err := encoder.Encode(fakeSimpleType)
+		err := encoder.EncodeType(fakeSimpleType)
 		assert.ErrorContains(t, err, "unknown simple type")
 	})
 
@@ -603,7 +625,7 @@ func TestSemaCodecBadTypes(t *testing.T) {
 
 		fakeNumericType := &sema.NumericType{}
 
-		err := encoder.Encode(fakeNumericType)
+		err := encoder.EncodeType(fakeNumericType)
 		assert.ErrorContains(t, err, "unexpected numeric type")
 	})
 
@@ -614,7 +636,7 @@ func TestSemaCodecBadTypes(t *testing.T) {
 
 		fakeFixedPointNumericType := &sema.FixedPointNumericType{}
 
-		err := encoder.Encode(fakeFixedPointNumericType)
+		err := encoder.EncodeType(fakeFixedPointNumericType)
 		assert.ErrorContains(t, err, "unexpected fixed point numeric type")
 	})
 
@@ -711,7 +733,7 @@ func TestSemaCodecInterfaceType(t *testing.T) {
 
 		encoder, decoder, buffer := NewTestCodec()
 
-		err := encoder.Encode(interfaceType)
+		err := encoder.EncodeType(interfaceType)
 		require.NoError(t, err, "encoding error")
 
 		expected := common_codec.Concat(
@@ -778,7 +800,7 @@ func TestSemaCodecInterfaceType(t *testing.T) {
 
 		assert.Equal(t, expected, buffer.Bytes(), "encoded bytes differ")
 
-		decoded, err := decoder.Decode()
+		decoded, err := decoder.DecodeType()
 		require.NoError(t, err, "decoding error")
 
 		// Cannot simply check equality between original and decoded types because they are not shallowly equal.
@@ -823,10 +845,10 @@ func TestSemaCodecCompositeType(t *testing.T) {
 
 		encoder, decoder, _ := NewTestCodec()
 
-		err := encoder.Encode(ty)
+		err := encoder.EncodeType(ty)
 		require.NoError(t, err, "encoding error")
 
-		decoded, err := decoder.Decode()
+		decoded, err := decoder.DecodeType()
 		require.NoError(t, err, "decoding error")
 
 		switch d := decoded.(type) {
@@ -844,7 +866,7 @@ func TestSemaCodecCompositeType(t *testing.T) {
 		theCompositeType := sema.AccountKeyType
 
 		encoder, buffer := NewTestEncoder()
-		err := encoder.Encode(theCompositeType)
+		err := encoder.EncodeType(theCompositeType)
 		require.NoError(t, err, "encoding error")
 
 		// verify the first few encoded bytes
@@ -883,7 +905,7 @@ func TestSemaCodecCompositeType(t *testing.T) {
 		assert.Equal(t, expected, buffer.Bytes()[:len(expected)], "encoded bytes")
 
 		decoder := sema_codec.NewSemaDecoder(nil, buffer)
-		output, err := decoder.Decode()
+		output, err := decoder.DecodeType()
 		require.NoError(t, err)
 
 		// populates `cachedIdentifiers` for top-level and its members
@@ -940,7 +962,7 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 
 		encoder, decoder, buffer := NewTestCodec()
 
-		err := encoder.Encode(c)
+		err := encoder.EncodeType(c)
 		require.NoError(t, err, "encoding error")
 
 		expected := []byte{
@@ -962,7 +984,7 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 
 		assert.Equal(t, expected, buffer.Bytes(), "encoded bytes differ")
 
-		decoded, err := decoder.Decode()
+		decoded, err := decoder.DecodeType()
 		require.NoError(t, err, "decoding error")
 
 		// Cannot simply check equality between original and decoded types because they are not shallowly equal.
@@ -982,7 +1004,7 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 
 		encoder, decoder, buffer := NewTestCodec()
 
-		err := encoder.Encode(c)
+		err := encoder.EncodeType(c)
 		require.NoError(t, err, "encoding error")
 
 		expected := []byte{
@@ -999,7 +1021,7 @@ func TestSemaCodecRecursiveType(t *testing.T) {
 
 		assert.Equal(t, expected, buffer.Bytes(), "encoded bytes differ")
 
-		decoded, err := decoder.Decode()
+		decoded, err := decoder.DecodeType()
 		require.NoError(t, err, "decoding error")
 
 		// Cannot simply check equality between original and decoded types because they are not shallowly equal.

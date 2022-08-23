@@ -277,7 +277,7 @@ func (i *FlowIntegration) sendTransaction(conn protocol.Conn, args ...json.RawMe
 		}
 	}
 
-	// even though .Encode returns []byte, without this conversion there is an error:
+	// even though .EncodeType returns []byte, without this conversion there is an error:
 	// transaction error: &errors.errorString{s:"failed to decode partial transaction...
 	// ...encoding/hex: invalid byte: U+00F9 'ù'"
 	txBytes := []byte(fmt.Sprintf("%x", tx.FlowTransaction().Encode()))
