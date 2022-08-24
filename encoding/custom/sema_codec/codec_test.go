@@ -62,13 +62,15 @@ func TestSemaCodecSimpleTypes(t *testing.T) {
 		{sema.VoidType, sema_codec.EncodedSemaSimpleTypeVoidType},
 	}
 
-	for _, typ := range tests {
-		t.Run(typ.SimpleType.Name, func(t *testing.T) {
-			t.Parallel()
-			testRootEncodeDecode(t, typ.SimpleType,
-				byte(typ.Type),
-			)
-		})
+	for _, test := range tests {
+		func(typ TestInfo) {
+			t.Run(typ.SimpleType.Name, func(t *testing.T) {
+				t.Parallel()
+				testRootEncodeDecode(t, typ.SimpleType,
+					byte(typ.Type),
+				)
+			})
+		}(test)
 	}
 }
 
@@ -109,13 +111,15 @@ func TestSemaCodecNumericTypes(t *testing.T) {
 		{sema.UFix64Type, sema_codec.EncodedSemaUFix64Type},
 	}
 
-	for _, typ := range tests {
-		t.Run(typ.SimpleType.String(), func(t *testing.T) {
-			t.Parallel()
-			testRootEncodeDecode(t, typ.SimpleType,
-				byte(typ.Type),
-			)
-		})
+	for _, test := range tests {
+		func(typ TestInfo) {
+			t.Run(typ.SimpleType.String(), func(t *testing.T) {
+				t.Parallel()
+				testRootEncodeDecode(t, typ.SimpleType,
+					byte(typ.Type),
+				)
+			})
+		}(test)
 	}
 }
 
