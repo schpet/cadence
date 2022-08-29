@@ -1,12 +1,13 @@
 package cadence_codec
 
 import (
+	"github.com/onflow/flow-go/fvm/errors"
+
 	"github.com/onflow/cadence"
 	"github.com/onflow/cadence/encoding"
 	customCodec "github.com/onflow/cadence/encoding/custom/value_codec"
 	jsoncdc "github.com/onflow/cadence/encoding/json"
 	"github.com/onflow/cadence/runtime/common"
-	"github.com/onflow/flow-go/fvm/errors"
 )
 
 type CadenceCodec struct {
