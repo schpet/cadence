@@ -831,6 +831,8 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t, err = d.DecodeFunctionType()
 	case EncodedTypeReference:
 		t, err = d.DecodeReferenceType()
+	case EncodedTypeRestricted:
+		t, err = d.DecodeRestrictedType()
 	case EncodedTypeCapabilityPath:
 		t = cadence.NewMeteredCapabilityPathType(d.memoryGauge)
 	case EncodedTypeStoragePath:
@@ -1127,6 +1129,26 @@ func (d *Decoder) DecodeReferenceType() (t cadence.ReferenceType, err error) {
 	}
 
 	t = cadence.NewMeteredReferenceType(d.memoryGauge, authorized, innerType)
+	return
+}
+
+func (d *Decoder) DecodeRestrictedType() (t *cadence.RestrictedType, err error) {
+	id, err := common_codec.DecodeString(&d.r)
+	if err != nil {
+		return
+	}
+
+	innerType, err := d.DecodeType()
+	if err != nil {
+		return
+	}
+
+	restrictions, err := DecodeArray(d, d.DecodeType)
+	if err != nil {
+		return
+	}
+
+	t = cadence.NewMeteredRestrictedType(d.memoryGauge, id, innerType, restrictions)
 	return
 }
 

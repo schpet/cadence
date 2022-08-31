@@ -606,6 +606,12 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 			return
 		}
 		return e.EncodeReferenceType(actualType)
+	case *cadence.RestrictedType:
+		err = e.EncodeTypeIdentifier(EncodedTypeRestricted)
+		if err != nil {
+			return
+		}
+		return e.EncodeRestrictedType(actualType)
 	case cadence.CapabilityPathType:
 		return e.EncodeTypeIdentifier(EncodedTypeCapabilityPath)
 	case cadence.StoragePathType:
@@ -675,6 +681,20 @@ func (e *Encoder) EncodeReferenceType(t cadence.ReferenceType) (err error) {
 	}
 
 	return e.EncodeType(t.Type)
+}
+
+func (e *Encoder) EncodeRestrictedType(t *cadence.RestrictedType) (err error) {
+	err = common_codec.EncodeString(&e.w, t.ID())
+	if err != nil {
+		return
+	}
+
+	err = e.EncodeType(t.Type)
+	if err != nil {
+		return
+	}
+
+	return EncodeArray(e, t.Restrictions, e.EncodeType)
 }
 
 func (e *Encoder) EncodeTypeIdentifier(id EncodedType) (err error) {
