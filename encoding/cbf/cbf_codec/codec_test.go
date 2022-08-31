@@ -2717,6 +2717,184 @@ func TestCadenceBinaryFormatCodecEnum(t *testing.T) {
 	})
 }
 
+func TestCadenceBinaryFormatCodec(t *testing.T) {
+	t.Parallel()
+
+	t.Run("StructInterfaceType", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewMeteredStructInterfaceType(
+			nil,
+			common.REPLLocation{},
+			"qid",
+			[]cadence.Field{
+				{
+					Identifier: "i",
+					Type:       cadence.StringType{},
+				},
+			},
+			[][]cadence.Parameter{
+				{{
+					Label:      "l",
+					Identifier: "i2",
+					Type:       cadence.BoolType{},
+				}},
+			},
+		)
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(cbf_codec.EncodedTypeStructInterface)},
+				[]byte{common.REPLLocationPrefix[0]},
+				[]byte{0, 0, 0, byte(len(typ.QualifiedIdentifier))},
+				[]byte(typ.QualifiedIdentifier),
+
+				[]byte{byte(common_codec.EncodedBoolFalse)},
+				[]byte{0, 0, 0, byte(len(typ.Fields))},
+				[]byte{0, 0, 0, byte(len(typ.Fields[0].Identifier))},
+				[]byte(typ.Fields[0].Identifier),
+				[]byte{byte(cbf_codec.EncodedTypeString)},
+
+				[]byte{byte(common_codec.EncodedBoolFalse)},
+				[]byte{0, 0, 0, byte(len(typ.Initializers))},
+				[]byte{byte(common_codec.EncodedBoolFalse)},
+				[]byte{0, 0, 0, byte(len(typ.Initializers[0]))},
+				[]byte{0, 0, 0, byte(len(typ.Initializers[0][0].Label))},
+				[]byte(typ.Initializers[0][0].Label),
+				[]byte{0, 0, 0, byte(len(typ.Initializers[0][0].Identifier))},
+				[]byte(typ.Initializers[0][0].Identifier),
+				[]byte{byte(cbf_codec.EncodedTypeBool)},
+			),
+			buffer.Bytes(),
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+
+	t.Run("ResourceInterfaceType", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewMeteredResourceInterfaceType(
+			nil,
+			common.REPLLocation{},
+			"qid",
+			[]cadence.Field{
+				{
+					Identifier: "i",
+					Type:       cadence.StringType{},
+				},
+			},
+			[][]cadence.Parameter{
+				{{
+					Label:      "l",
+					Identifier: "i2",
+					Type:       cadence.BoolType{},
+				}},
+			},
+		)
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(cbf_codec.EncodedTypeResourceInterface)},
+				[]byte{common.REPLLocationPrefix[0]},
+				[]byte{0, 0, 0, byte(len(typ.QualifiedIdentifier))},
+				[]byte(typ.QualifiedIdentifier),
+
+				[]byte{byte(common_codec.EncodedBoolFalse)},
+				[]byte{0, 0, 0, byte(len(typ.Fields))},
+				[]byte{0, 0, 0, byte(len(typ.Fields[0].Identifier))},
+				[]byte(typ.Fields[0].Identifier),
+				[]byte{byte(cbf_codec.EncodedTypeString)},
+
+				[]byte{byte(common_codec.EncodedBoolFalse)},
+				[]byte{0, 0, 0, byte(len(typ.Initializers))},
+				[]byte{byte(common_codec.EncodedBoolFalse)},
+				[]byte{0, 0, 0, byte(len(typ.Initializers[0]))},
+				[]byte{0, 0, 0, byte(len(typ.Initializers[0][0].Label))},
+				[]byte(typ.Initializers[0][0].Label),
+				[]byte{0, 0, 0, byte(len(typ.Initializers[0][0].Identifier))},
+				[]byte(typ.Initializers[0][0].Identifier),
+				[]byte{byte(cbf_codec.EncodedTypeBool)},
+			),
+			buffer.Bytes(),
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+
+	t.Run("ContractInterfaceType", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewMeteredContractInterfaceType(
+			nil,
+			common.REPLLocation{},
+			"qid",
+			[]cadence.Field{
+				{
+					Identifier: "i",
+					Type:       cadence.StringType{},
+				},
+			},
+			[][]cadence.Parameter{
+				{{
+					Label:      "l",
+					Identifier: "i2",
+					Type:       cadence.BoolType{},
+				}},
+			},
+		)
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(cbf_codec.EncodedTypeContractInterface)},
+				[]byte{common.REPLLocationPrefix[0]},
+				[]byte{0, 0, 0, byte(len(typ.QualifiedIdentifier))},
+				[]byte(typ.QualifiedIdentifier),
+
+				[]byte{byte(common_codec.EncodedBoolFalse)},
+				[]byte{0, 0, 0, byte(len(typ.Fields))},
+				[]byte{0, 0, 0, byte(len(typ.Fields[0].Identifier))},
+				[]byte(typ.Fields[0].Identifier),
+				[]byte{byte(cbf_codec.EncodedTypeString)},
+
+				[]byte{byte(common_codec.EncodedBoolFalse)},
+				[]byte{0, 0, 0, byte(len(typ.Initializers))},
+				[]byte{byte(common_codec.EncodedBoolFalse)},
+				[]byte{0, 0, 0, byte(len(typ.Initializers[0]))},
+				[]byte{0, 0, 0, byte(len(typ.Initializers[0][0].Label))},
+				[]byte(typ.Initializers[0][0].Label),
+				[]byte{0, 0, 0, byte(len(typ.Initializers[0][0].Identifier))},
+				[]byte(typ.Initializers[0][0].Identifier),
+				[]byte{byte(cbf_codec.EncodedTypeBool)},
+			),
+			buffer.Bytes(),
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+}
+
 func TestCadenceBinaryFormatCodecAbstractTypes(t *testing.T) {
 	t.Parallel()
 

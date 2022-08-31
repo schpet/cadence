@@ -576,6 +576,24 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 			return
 		}
 		return e.EncodeContractType(actualType)
+	case *cadence.StructInterfaceType:
+		err = e.EncodeTypeIdentifier(EncodedTypeStructInterface)
+		if err != nil {
+			return
+		}
+		return e.EncodeInterfaceType(actualType)
+	case *cadence.ResourceInterfaceType:
+		err = e.EncodeTypeIdentifier(EncodedTypeResourceInterface)
+		if err != nil {
+			return
+		}
+		return e.EncodeInterfaceType(actualType)
+	case *cadence.ContractInterfaceType:
+		err = e.EncodeTypeIdentifier(EncodedTypeContractInterface)
+		if err != nil {
+			return
+		}
+		return e.EncodeInterfaceType(actualType)
 	case cadence.CapabilityPathType:
 		return e.EncodeTypeIdentifier(EncodedTypeCapabilityPath)
 	case cadence.StoragePathType:
@@ -729,6 +747,28 @@ func (e *Encoder) EncodeContractType(t *cadence.ContractType) (err error) {
 	})
 
 	return EncodeArray(e, t.Initializers, func(parameters []cadence.Parameter) (err error) {
+		return EncodeArray(e, parameters, func(parameter cadence.Parameter) (err error) {
+			return e.EncodeParameter(parameter)
+		})
+	})
+}
+
+func (e *Encoder) EncodeInterfaceType(t cadence.InterfaceType) (err error) {
+	err = common_codec.EncodeLocation(&e.w, t.InterfaceTypeLocation())
+	if err != nil {
+		return
+	}
+
+	err = common_codec.EncodeString(&e.w, t.InterfaceTypeQualifiedIdentifier())
+	if err != nil {
+		return
+	}
+
+	err = EncodeArray(e, t.InterfaceFields(), func(field cadence.Field) (err error) {
+		return e.EncodeField(field)
+	})
+
+	return EncodeArray(e, t.InterfaceInitializers(), func(parameters []cadence.Parameter) (err error) {
 		return EncodeArray(e, parameters, func(parameter cadence.Parameter) (err error) {
 			return e.EncodeParameter(parameter)
 		})
