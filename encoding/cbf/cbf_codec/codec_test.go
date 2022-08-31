@@ -2943,6 +2943,37 @@ func TestCadenceBinaryFormatCodecFunctionType(t *testing.T) {
 	})
 }
 
+func TestCadenceBinaryFormatCodecReferenceType(t *testing.T) {
+	t.Parallel()
+
+	t.Run("authorized", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewReferenceType(
+			true,
+			cadence.Int64Type{},
+		)
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(cbf_codec.EncodedTypeReference)},
+				[]byte{byte(common_codec.EncodedBoolTrue)},
+				[]byte{byte(cbf_codec.EncodedTypeInt64)},
+			),
+			buffer.Bytes(),
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+}
+
 func TestCadenceBinaryFormatCodecAbstractTypes(t *testing.T) {
 	t.Parallel()
 
