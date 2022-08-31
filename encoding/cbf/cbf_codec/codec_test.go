@@ -2717,7 +2717,7 @@ func TestCadenceBinaryFormatCodecEnum(t *testing.T) {
 	})
 }
 
-func TestCadenceBinaryFormatCodec(t *testing.T) {
+func TestCadenceBinaryFormatCodecInterfaceType(t *testing.T) {
 	t.Parallel()
 
 	t.Run("StructInterfaceType", func(t *testing.T) {
@@ -2884,6 +2884,54 @@ func TestCadenceBinaryFormatCodec(t *testing.T) {
 				[]byte{0, 0, 0, byte(len(typ.Initializers[0][0].Identifier))},
 				[]byte(typ.Initializers[0][0].Identifier),
 				[]byte{byte(cbf_codec.EncodedTypeBool)},
+			),
+			buffer.Bytes(),
+		)
+
+		output, err := decoder.DecodeType()
+		require.NoError(t, err, "decoding error")
+
+		assert.Equal(t, typ, output, "decoded type differs")
+	})
+}
+
+func TestCadenceBinaryFormatCodecFunctionType(t *testing.T) {
+	t.Parallel()
+
+	t.Run("full", func(t *testing.T) {
+		encoder, decoder, buffer := NewTestCodec()
+
+		typ := cadence.NewFunctionType(
+			"tid",
+			[]cadence.Parameter{
+				{
+					Label:      "el",
+					Identifier: "ihden",
+					Type:       cadence.UIntType{},
+				},
+			},
+			cadence.IntType{},
+		)
+
+		err := encoder.EncodeType(typ)
+		require.NoError(t, err, "encoding error")
+
+		assert.Equal(
+			t,
+			common_codec.Concat(
+				[]byte{byte(cbf_codec.EncodedTypeFunction)},
+
+				[]byte{0, 0, 0, byte(len(typ.ID()))},
+				[]byte(typ.ID()),
+
+				[]byte{byte(common_codec.EncodedBoolFalse)},
+				[]byte{0, 0, 0, byte(len(typ.Parameters))},
+				[]byte{0, 0, 0, byte(len(typ.Parameters[0].Label))},
+				[]byte(typ.Parameters[0].Label),
+				[]byte{0, 0, 0, byte(len(typ.Parameters[0].Identifier))},
+				[]byte(typ.Parameters[0].Identifier),
+				[]byte{byte(cbf_codec.EncodedTypeUInt)},
+				[]byte{byte(cbf_codec.EncodedTypeInt)},
 			),
 			buffer.Bytes(),
 		)

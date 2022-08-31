@@ -594,6 +594,12 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 			return
 		}
 		return e.EncodeInterfaceType(actualType)
+	case *cadence.FunctionType:
+		err = e.EncodeTypeIdentifier(EncodedTypeFunction)
+		if err != nil {
+			return
+		}
+		return e.EncodeFunctionType(actualType)
 	case cadence.CapabilityPathType:
 		return e.EncodeTypeIdentifier(EncodedTypeCapabilityPath)
 	case cadence.StoragePathType:
@@ -640,6 +646,20 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 	}
 
 	return fmt.Errorf("unknown type: %s", t)
+}
+
+func (e *Encoder) EncodeFunctionType(t *cadence.FunctionType) (err error) {
+	err = common_codec.EncodeString(&e.w, t.ID())
+	if err != nil {
+		return
+	}
+
+	err = EncodeArray(e, t.Parameters, e.EncodeParameter)
+	if err != nil {
+		return
+	}
+
+	return e.EncodeType(t.ReturnType)
 }
 
 func (e *Encoder) EncodeTypeIdentifier(id EncodedType) (err error) {

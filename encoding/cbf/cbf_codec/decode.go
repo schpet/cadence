@@ -827,6 +827,8 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t, err = d.DecodeResourceInterfaceType()
 	case EncodedTypeContractInterface:
 		t, err = d.DecodeContractInterfaceType()
+	case EncodedTypeFunction:
+		t, err = d.DecodeFunctionType()
 	case EncodedTypeCapabilityPath:
 		t = cadence.NewMeteredCapabilityPathType(d.memoryGauge)
 	case EncodedTypeStoragePath:
@@ -1087,6 +1089,27 @@ func (d *Decoder) decodeInterfaceType() (
 		})
 	})
 
+	return
+}
+
+func (d *Decoder) DecodeFunctionType() (t *cadence.FunctionType, err error) {
+	id, err := common_codec.DecodeString(&d.r)
+	if err != nil {
+		return
+	}
+
+	parameters, err := DecodeArray(d, d.DecodeParameter)
+	if err != nil {
+		return
+	}
+
+	returnType, err := d.DecodeType()
+
+	if err != nil {
+		return
+	}
+
+	t = cadence.NewMeteredFunctionType(d.memoryGauge, id, parameters, returnType)
 	return
 }
 
