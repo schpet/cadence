@@ -22,12 +22,13 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/onflow/cadence"
 	"github.com/onflow/cadence/encoding/cbf/cbf_codec"
 	"github.com/onflow/cadence/encoding/cbf/common_codec"
 	"github.com/onflow/cadence/runtime/common"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCadenceBinaryFormatCodecVoid(t *testing.T) {
@@ -3029,6 +3030,7 @@ func TestCadenceBinaryFormatCodecSimpleTypes(t *testing.T) {
 		{cadence.PublicAccountContractsType{}, cbf_codec.EncodedTypePublicAccountContracts},
 		{cadence.AuthAccountKeysType{}, cbf_codec.EncodedTypeAuthAccountKeys},
 		{cadence.PublicAccountKeysType{}, cbf_codec.EncodedTypePublicAccountKeys},
+		{cadence.MetaType{}, cbf_codec.EncodedTypeMetaType},
 	}
 
 	for _, test := range tests {

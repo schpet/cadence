@@ -671,6 +671,8 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 		return e.EncodeTypeIdentifier(EncodedTypeAnyResourceType)
 	case cadence.PathType:
 		return e.EncodeTypeIdentifier(EncodedTypePath)
+	case cadence.MetaType:
+		return e.EncodeTypeIdentifier(EncodedTypeMetaType)
 	}
 
 	return fmt.Errorf("unknown type: %s", t)

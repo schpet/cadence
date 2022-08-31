@@ -875,6 +875,8 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t = cadence.NewMeteredAnyResourceType(d.memoryGauge)
 	case EncodedTypePath:
 		t = cadence.NewMeteredPathType(d.memoryGauge)
+	case EncodedTypeMetaType:
+		t = cadence.NewMeteredMetaType(d.memoryGauge)
 	default:
 		err = fmt.Errorf("unknown type identifier: %d", typeIdentifer)
 	}
