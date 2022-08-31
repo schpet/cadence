@@ -22,13 +22,12 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/onflow/cadence"
 	"github.com/onflow/cadence/encoding/cbf/cbf_codec"
 	"github.com/onflow/cadence/encoding/cbf/common_codec"
 	"github.com/onflow/cadence/runtime/common"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCadenceBinaryFormatCodecVoid(t *testing.T) {
@@ -3014,26 +3013,46 @@ func TestCadenceBinaryFormatCodecRestrictedType(t *testing.T) {
 	})
 }
 
-func TestCadenceBinaryFormatCodecBlockType(t *testing.T) {
+func TestCadenceBinaryFormatCodecSimpleTypes(t *testing.T) {
 	t.Parallel()
 
-	encoder, decoder, buffer := NewTestCodec()
+	type Test struct {
+		Type cadence.Type
+		Byte cbf_codec.EncodedType
+	}
+	tests := []Test{
+		{cadence.BlockType{}, cbf_codec.EncodedTypeBlock},
+		{cadence.AuthAccountType{}, cbf_codec.EncodedTypeAuthAccount},
+		{cadence.PublicAccountType{}, cbf_codec.EncodedTypePublicAccount},
+		{cadence.DeployedContractType{}, cbf_codec.EncodedTypeDeployedContract},
+		{cadence.AuthAccountContractsType{}, cbf_codec.EncodedTypeAuthAccountContracts},
+		{cadence.PublicAccountContractsType{}, cbf_codec.EncodedTypePublicAccountContracts},
+		{cadence.AuthAccountKeysType{}, cbf_codec.EncodedTypeAuthAccountKeys},
+		{cadence.PublicAccountKeysType{}, cbf_codec.EncodedTypePublicAccountKeys},
+	}
 
-	typ := cadence.BlockType{}
+	for _, test := range tests {
+		func(test Test) {
+			t.Run(test.Type.ID(), func(t *testing.T) {
+				encoder, decoder, buffer := NewTestCodec()
 
-	err := encoder.EncodeType(typ)
-	require.NoError(t, err, "encoding error")
+				err := encoder.EncodeType(test.Type)
+				require.NoError(t, err, "encoding error")
 
-	assert.Equal(
-		t,
-		[]byte{byte(cbf_codec.EncodedTypeBlock)},
-		buffer.Bytes(),
-	)
+				assert.Equal(
+					t,
+					[]byte{byte(test.Byte)},
+					buffer.Bytes(),
+				)
 
-	output, err := decoder.DecodeType()
-	require.NoError(t, err, "decoding error")
+				output, err := decoder.DecodeType()
+				require.NoError(t, err, "decoding error")
 
-	assert.Equal(t, typ, output, "decoded type differs")
+				assert.Equal(t, test.Type, output, "decoded type differs")
+			})
+		}(test)
+	}
+
 }
 
 func TestCadenceBinaryFormatCodecAbstractTypes(t *testing.T) {

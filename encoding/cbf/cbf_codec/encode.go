@@ -614,6 +614,20 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 		return e.EncodeRestrictedType(actualType)
 	case cadence.BlockType:
 		return e.EncodeTypeIdentifier(EncodedTypeBlock)
+	case cadence.AuthAccountType:
+		return e.EncodeTypeIdentifier(EncodedTypeAuthAccount)
+	case cadence.PublicAccountType:
+		return e.EncodeTypeIdentifier(EncodedTypePublicAccount)
+	case cadence.DeployedContractType:
+		return e.EncodeTypeIdentifier(EncodedTypeDeployedContract)
+	case cadence.AuthAccountContractsType:
+		return e.EncodeTypeIdentifier(EncodedTypeAuthAccountContracts)
+	case cadence.PublicAccountContractsType:
+		return e.EncodeTypeIdentifier(EncodedTypePublicAccountContracts)
+	case cadence.AuthAccountKeysType:
+		return e.EncodeTypeIdentifier(EncodedTypeAuthAccountKeys)
+	case cadence.PublicAccountKeysType:
+		return e.EncodeTypeIdentifier(EncodedTypePublicAccountKeys)
 	case cadence.CapabilityPathType:
 		return e.EncodeTypeIdentifier(EncodedTypeCapabilityPath)
 	case cadence.StoragePathType:

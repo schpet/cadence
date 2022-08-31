@@ -835,6 +835,20 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t, err = d.DecodeRestrictedType()
 	case EncodedTypeBlock:
 		t = cadence.NewMeteredBlockType(d.memoryGauge)
+	case EncodedTypeAuthAccount:
+		t = cadence.NewMeteredAuthAccountType(d.memoryGauge)
+	case EncodedTypePublicAccount:
+		t = cadence.NewMeteredPublicAccountType(d.memoryGauge)
+	case EncodedTypeDeployedContract:
+		t = cadence.NewMeteredDeployedContractType(d.memoryGauge)
+	case EncodedTypeAuthAccountContracts:
+		t = cadence.NewMeteredAuthAccountContractsType(d.memoryGauge)
+	case EncodedTypePublicAccountContracts:
+		t = cadence.NewMeteredPublicAccountContractsType(d.memoryGauge)
+	case EncodedTypeAuthAccountKeys:
+		t = cadence.NewMeteredAuthAccountKeysType(d.memoryGauge)
+	case EncodedTypePublicAccountKeys:
+		t = cadence.NewMeteredPublicAccountKeysType(d.memoryGauge)
 	case EncodedTypeCapabilityPath:
 		t = cadence.NewMeteredCapabilityPathType(d.memoryGauge)
 	case EncodedTypeStoragePath:
