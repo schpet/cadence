@@ -612,6 +612,8 @@ func (e *Encoder) EncodeType(t cadence.Type) (err error) {
 			return
 		}
 		return e.EncodeRestrictedType(actualType)
+	case cadence.BlockType:
+		return e.EncodeTypeIdentifier(EncodedTypeBlock)
 	case cadence.CapabilityPathType:
 		return e.EncodeTypeIdentifier(EncodedTypeCapabilityPath)
 	case cadence.StoragePathType:

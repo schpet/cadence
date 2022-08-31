@@ -3014,6 +3014,28 @@ func TestCadenceBinaryFormatCodecRestrictedType(t *testing.T) {
 	})
 }
 
+func TestCadenceBinaryFormatCodecBlockType(t *testing.T) {
+	t.Parallel()
+
+	encoder, decoder, buffer := NewTestCodec()
+
+	typ := cadence.BlockType{}
+
+	err := encoder.EncodeType(typ)
+	require.NoError(t, err, "encoding error")
+
+	assert.Equal(
+		t,
+		[]byte{byte(cbf_codec.EncodedTypeBlock)},
+		buffer.Bytes(),
+	)
+
+	output, err := decoder.DecodeType()
+	require.NoError(t, err, "decoding error")
+
+	assert.Equal(t, typ, output, "decoded type differs")
+}
+
 func TestCadenceBinaryFormatCodecAbstractTypes(t *testing.T) {
 	t.Parallel()
 

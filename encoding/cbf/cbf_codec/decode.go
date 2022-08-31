@@ -833,6 +833,8 @@ func (d *Decoder) DecodeType() (t cadence.Type, err error) {
 		t, err = d.DecodeReferenceType()
 	case EncodedTypeRestricted:
 		t, err = d.DecodeRestrictedType()
+	case EncodedTypeBlock:
+		t = cadence.NewMeteredBlockType(d.memoryGauge)
 	case EncodedTypeCapabilityPath:
 		t = cadence.NewMeteredCapabilityPathType(d.memoryGauge)
 	case EncodedTypeStoragePath:
